@@ -59,6 +59,24 @@ impl Library {
     }
 }
 
+impl Library {
+    /// Updates the index for files changed on disk; notifies readers only if
+    /// something actually changed.
+    pub fn sync_files(&self, paths: &[PathBuf]) {
+        let Ok(store) = self.store.as_ref() else {
+            return;
+        };
+        let mut changed = false;
+        for path in paths {
+            changed |= store.sync_file(path).unwrap_or(false);
+        }
+        if changed {
+            let mut version = self.version;
+            version += 1;
+        }
+    }
+}
+
 fn database_path() -> Option<PathBuf> {
     let app_data = std::env::var_os("APPDATA")?;
     Some(
