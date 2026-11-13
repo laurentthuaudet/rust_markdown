@@ -1,13 +1,16 @@
 //! Root component: toolbar, side-by-side editor and live preview.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use dioxus::prelude::*;
 use rfd::{AsyncFileDialog, AsyncMessageDialog, MessageButtons, MessageDialogResult, MessageLevel};
 use rmd_core::RenderConfig;
 
 use crate::document::Document;
+use crate::document_bar::DocumentBar;
 use crate::export::ExportMenu;
+use crate::library::Library;
+use crate::library_panel::LibraryPanel;
 use crate::local_files;
 use crate::notice::{Notice, Status, StatusBar};
 
@@ -54,6 +57,8 @@ pub fn App() -> Element {
     let mut doc = use_signal(|| initial.0.clone());
     let status = use_signal(|| initial.1.clone());
     let mut mode = use_signal(|| ViewMode::Split);
+    let mut show_library = use_signal(|| true);
+    use_context_provider(Library::open);
 
     let html = use_memo(move || {
         let doc = doc.read();
@@ -93,6 +98,12 @@ pub fn App() -> Element {
     rsx! {
         div { class: "app", onkeydown: on_keydown,
             header { class: "toolbar",
+                button {
+                    class: if show_library() { "active" },
+                    title: "Afficher/masquer la bibliothèque",
+                    onclick: move |_| show_library.toggle(),
+                    "Bibliothèque"
+                }
                 button { title: "Nouveau (Ctrl+N)", onclick: move |_| { fire(new_document(doc, status)); }, "Nouveau" }
                 button { title: "Ouvrir (Ctrl+O)", onclick: move |_| { fire(open(doc, status)); }, "Ouvrir" }
                 button { title: "Enregistrer (Ctrl+S)", onclick: move |_| { fire(save(doc, status)); }, "Enregistrer" }
@@ -109,19 +120,27 @@ pub fn App() -> Element {
                     }
                 }
             }
-            main { class: "panes",
-                if current_mode != ViewMode::Preview {
-                    textarea {
-                        class: "editor",
-                        spellcheck: "false",
-                        placeholder: "Écrivez du Markdown ici…",
-                        value: "{doc.read().content}",
-                        oninput: move |event| doc.write().content = event.value(),
-                    }
+            div { class: "body",
+                if show_library() {
+                    LibraryPanel { doc, status }
                 }
-                if current_mode != ViewMode::Editor {
-                    article { class: "preview",
-                        div { class: "markdown-body", dangerous_inner_html: "{html}" }
+                div { class: "workspace",
+                    DocumentBar { doc, status }
+                    main { class: "panes",
+                        if current_mode != ViewMode::Preview {
+                            textarea {
+                                class: "editor",
+                                spellcheck: "false",
+                                placeholder: "Écrivez du Markdown ici…",
+                                value: "{doc.read().content}",
+                                oninput: move |event| doc.write().content = event.value(),
+                            }
+                        }
+                        if current_mode != ViewMode::Editor {
+                            article { class: "preview",
+                                div { class: "markdown-body", dangerous_inner_html: "{html}" }
+                            }
+                        }
                     }
                 }
             }
@@ -166,7 +185,7 @@ async fn new_document(mut doc: Signal<Document>, status: Status) {
     }
 }
 
-async fn open(mut doc: Signal<Document>, mut status: Status) {
+async fn open(doc: Signal<Document>, status: Status) {
     if !confirm_discard(doc, status).await {
         return;
     }
@@ -174,7 +193,21 @@ async fn open(mut doc: Signal<Document>, mut status: Status) {
     let Some(file) = dialog.pick_file().await else {
         return;
     };
-    match Document::open(file.path()) {
+    load(doc, status, file.path());
+}
+
+/// Opens `path` (e.g. from the library), asking first about unsaved changes.
+pub async fn open_path(doc: Signal<Document>, status: Status, path: PathBuf) {
+    if doc.read().path() == Some(path.as_path()) {
+        return;
+    }
+    if confirm_discard(doc, status).await {
+        load(doc, status, &path);
+    }
+}
+
+fn load(mut doc: Signal<Document>, mut status: Status, path: &Path) {
+    match Document::open(path) {
         Ok(opened) => {
             doc.set(opened);
             status.set(None);
@@ -191,7 +224,7 @@ async fn save(mut doc: Signal<Document>, mut status: Status) -> bool {
         return save_as(doc, status).await;
     }
     let result = doc.write().save();
-    report_save(result, &mut status)
+    report_save(result, doc, &mut status)
 }
 
 async fn save_as(mut doc: Signal<Document>, mut status: Status) -> bool {
@@ -204,13 +237,14 @@ async fn save_as(mut doc: Signal<Document>, mut status: Status) -> bool {
         path.set_extension("md");
     }
     let result = doc.write().save_as(path);
-    report_save(result, &mut status)
+    report_save(result, doc, &mut status)
 }
 
-fn report_save(result: std::io::Result<()>, status: &mut Status) -> bool {
+fn report_save(result: std::io::Result<()>, doc: Signal<Document>, status: &mut Status) -> bool {
     match result {
         Ok(()) => {
             status.set(None);
+            reindex(&doc.read());
             true
         }
         Err(err) => {
@@ -220,6 +254,17 @@ fn report_save(result: std::io::Result<()>, status: &mut Status) -> bool {
             false
         }
     }
+}
+
+/// Keeps the library index in sync after the document was written to disk.
+fn reindex(doc: &Document) {
+    let (Some(path), Some(library)) = (doc.path(), try_consume_context::<Library>()) else {
+        return;
+    };
+    let _ = library.write(|store| match store.document_by_path(path)? {
+        Some(entry) => store.reindex(entry.id),
+        None => Ok(()),
+    });
 }
 
 /// Runs an async action in the background, ignoring its result.

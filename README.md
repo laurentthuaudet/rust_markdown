@@ -2,33 +2,67 @@
 
 A desktop Markdown reader/editor for Windows, written in Rust with [Dioxus](https://dioxuslabs.com).
 
-## Features (planned)
+## Features
 
-- View Markdown (CommonMark + GFM: tables, task lists, strikethrough, autolinks, footnotes) with syntax-highlighted code blocks
-- Edit with a side-by-side live preview
-- Export to HTML, PDF, DOCX and EPUB (pure Rust, no external tools)
-- **Environments**: group Markdown files scattered across the disk into named collections
-  (a file can belong to several environments), tag them, and find them again by name,
-  tag, modification date or full-text search (SQLite + FTS5)
+- **View** Markdown: CommonMark + GitHub Flavored Markdown (tables, task lists,
+  strikethrough, autolinks, footnotes, alerts) with syntax-highlighted code blocks
+  and local images
+- **Edit** in a plain-text editor with a live side-by-side preview
+  (editor only / side by side / preview only)
+- **Export** to HTML (self-contained), PDF (Typst engine), Word (DOCX) and EPUB 3 —
+  pure Rust, no external tool required
+- **Environments**: group Markdown files scattered across the disk into named
+  collections. A file can belong to several environments. Tag files and find them
+  again by name/title, tags, modification date or full-text search (accent-insensitive)
 
-## Development workflow
+## Usage
 
-- Each feature lives on its own branch (`feat/...`, `chore/...`) and is merged into `main` with `--no-ff`
-- Commits follow [Conventional Commits](https://www.conventionalcommits.org)
+| Action | How |
+|--------|-----|
+| New / open / save / save as | Toolbar or `Ctrl+N`, `Ctrl+O`, `Ctrl+S`, `Ctrl+Shift+S` |
+| Open a file at startup | `rust-markdown path\to\file.md` (works with "Open with…") |
+| Export | Toolbar → **Exporter** → format |
+| Create an environment | Library sidebar → **+** |
+| Add files to an environment | Select it → **Ajouter des fichiers** / **Ajouter un dossier**, or use **Ajouter à…** in the document bar |
+| Tag the open document | Document bar → **Tags** (comma-separated, `Enter` to apply) |
+| Filter | Library sidebar → full text, name, date range, tags |
+
+The library index lives in `%APPDATA%\rust_markdown\library.db`. It only stores
+references: files are never moved or modified by the library. Files changed
+outside the application are reindexed at startup or with the **⟳** button.
 
 ## Workspace layout
 
 | Crate | Role |
 |-------|------|
-| `crates/rmd-core` | Markdown parsing and HTML rendering |
-| `crates/rmd-export` | Export to HTML, PDF, DOCX, EPUB |
-| `crates/rmd-store` | Environments, tags and full-text index (SQLite) |
+| `crates/rmd-core` | Markdown parsing and HTML rendering (comrak + syntect) |
+| `crates/rmd-export` | Export to HTML, PDF (typst), DOCX (docx-rs), EPUB (epub-builder) |
+| `crates/rmd-store` | Environments, tags and full-text index (SQLite + FTS5) |
 | `crates/rmd-app` | Dioxus desktop application (binary `rust-markdown`) |
 
 ## Build & run
 
-Requirements: Rust (stable, MSVC toolchain) and Visual Studio Build Tools (C++ workload).
+Requirements: Rust (stable, MSVC toolchain), Visual Studio Build Tools (C++
+workload) and the WebView2 runtime (included in Windows 11).
 
 ```bash
 cargo run -p rust-markdown --release
 ```
+
+Run the tests:
+
+```bash
+cargo test --workspace
+```
+
+Try an exporter from the command line:
+
+```bash
+cargo run -p rmd-export --example export -- examples/demo.md demo.pdf
+```
+
+## Development workflow
+
+- Each feature lives on its own branch (`feat/...`, `chore/...`) and is merged into `main` with `--no-ff`
+- Commits follow [Conventional Commits](https://www.conventionalcommits.org)
+- CI (GitHub Actions, Windows) runs `cargo fmt --check`, `clippy -D warnings` and the tests
