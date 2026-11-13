@@ -12,6 +12,9 @@ pub struct Document {
     pub content: String,
     /// Text as last read from or written to disk, to detect unsaved changes.
     saved: String,
+    /// The file uses Windows line endings. The editor (a textarea) only knows
+    /// `\n`, so the content is kept with `\n` and converted back on save.
+    crlf: bool,
 }
 
 impl Document {
@@ -23,11 +26,14 @@ impl Document {
     /// Loads a document from disk.
     pub fn open(path: impl Into<PathBuf>) -> io::Result<Self> {
         let path = path.into();
-        let content = fs::read_to_string(&path)?;
+        let raw = fs::read_to_string(&path)?;
+        let crlf = raw.contains("\r\n");
+        let content = raw.replace("\r\n", "\n");
         Ok(Self {
             path: Some(path),
             saved: content.clone(),
             content,
+            crlf,
         })
     }
 
@@ -69,7 +75,11 @@ impl Document {
     /// Writes the document to `path`, which becomes its new location.
     pub fn save_as(&mut self, path: impl Into<PathBuf>) -> io::Result<()> {
         let path = path.into();
-        fs::write(&path, &self.content)?;
+        if self.crlf {
+            fs::write(&path, self.content.replace('\n', "\r\n"))?;
+        } else {
+            fs::write(&path, &self.content)?;
+        }
         self.saved = self.content.clone();
         self.path = Some(path);
         Ok(())
@@ -110,5 +120,38 @@ mod tests {
         doc.save_as(&path).unwrap();
         assert_eq!(doc.path(), Some(path.as_path()));
         assert!(!doc.is_dirty());
+    }
+}
+
+#[cfg(test)]
+mod line_ending_tests {
+    use super::*;
+
+    #[test]
+    fn keeps_windows_line_endings_on_disk() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("crlf.md");
+        fs::write(&path, "# A\r\n\r\ntext\r\n").unwrap();
+
+        let mut doc = Document::open(&path).unwrap();
+        assert_eq!(doc.content, "# A\n\ntext\n");
+        assert!(!doc.is_dirty());
+
+        doc.content.push_str("more\n");
+        doc.save().unwrap();
+        assert_eq!(
+            fs::read_to_string(&path).unwrap(),
+            "# A\r\n\r\ntext\r\nmore\r\n"
+        );
+    }
+
+    #[test]
+    fn leaves_unix_line_endings_alone() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("lf.md");
+        fs::write(&path, "a\nb\n").unwrap();
+        let mut doc = Document::open(&path).unwrap();
+        doc.save().unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "a\nb\n");
     }
 }
