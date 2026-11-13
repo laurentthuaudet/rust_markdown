@@ -7,7 +7,9 @@ use rfd::{AsyncFileDialog, AsyncMessageDialog, MessageButtons, MessageDialogResu
 use rmd_core::RenderConfig;
 
 use crate::document::Document;
+use crate::export::ExportMenu;
 use crate::local_files;
+use crate::notice::{Notice, Status, StatusBar};
 
 /// Which panes are visible.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,14 +32,17 @@ impl ViewMode {
 }
 
 /// Document passed on the command line (e.g. "Open with…" from Explorer).
-fn initial_document() -> (Document, Option<String>) {
+fn initial_document() -> (Document, Option<Notice>) {
     match std::env::args_os().nth(1).map(PathBuf::from) {
         None => (Document::new(), None),
         Some(path) => match Document::open(&path) {
             Ok(doc) => (doc, None),
             Err(err) => (
                 Document::new(),
-                Some(format!("Impossible d'ouvrir {} : {err}", path.display())),
+                Some(Notice::error(format!(
+                    "Impossible d'ouvrir {} : {err}",
+                    path.display()
+                ))),
             ),
         },
     }
@@ -47,7 +52,7 @@ fn initial_document() -> (Document, Option<String>) {
 pub fn App() -> Element {
     let initial = use_hook(initial_document);
     let mut doc = use_signal(|| initial.0.clone());
-    let mut status = use_signal(|| initial.1.clone());
+    let status = use_signal(|| initial.1.clone());
     let mut mode = use_signal(|| ViewMode::Split);
 
     let html = use_memo(move || {
@@ -92,6 +97,7 @@ pub fn App() -> Element {
                 button { title: "Ouvrir (Ctrl+O)", onclick: move |_| { fire(open(doc, status)); }, "Ouvrir" }
                 button { title: "Enregistrer (Ctrl+S)", onclick: move |_| { fire(save(doc, status)); }, "Enregistrer" }
                 button { title: "Enregistrer sous (Ctrl+Maj+S)", onclick: move |_| { fire(save_as(doc, status)); }, "Enregistrer sous" }
+                ExportMenu { doc, status }
                 div { class: "spacer" }
                 div { class: "segmented",
                     for view in ViewMode::ALL {
@@ -119,18 +125,13 @@ pub fn App() -> Element {
                     }
                 }
             }
-            if let Some(message) = status() {
-                footer { class: "status",
-                    span { "{message}" }
-                    button { class: "link", onclick: move |_| status.set(None), "✕" }
-                }
-            }
+            StatusBar { status }
         }
     }
 }
 
 /// Asks what to do with unsaved changes. Returns `true` if the caller may proceed.
-async fn confirm_discard(doc: Signal<Document>, status: Signal<Option<String>>) -> bool {
+async fn confirm_discard(doc: Signal<Document>, status: Status) -> bool {
     if !doc.read().is_dirty() {
         return true;
     }
@@ -159,13 +160,13 @@ fn markdown_dialog(doc: &Document) -> AsyncFileDialog {
     }
 }
 
-async fn new_document(mut doc: Signal<Document>, status: Signal<Option<String>>) {
+async fn new_document(mut doc: Signal<Document>, status: Status) {
     if confirm_discard(doc, status).await {
         doc.set(Document::new());
     }
 }
 
-async fn open(mut doc: Signal<Document>, mut status: Signal<Option<String>>) {
+async fn open(mut doc: Signal<Document>, mut status: Status) {
     if !confirm_discard(doc, status).await {
         return;
     }
@@ -178,12 +179,14 @@ async fn open(mut doc: Signal<Document>, mut status: Signal<Option<String>>) {
             doc.set(opened);
             status.set(None);
         }
-        Err(err) => status.set(Some(format!("Impossible d'ouvrir le fichier : {err}"))),
+        Err(err) => status.set(Some(Notice::error(format!(
+            "Impossible d'ouvrir le fichier : {err}"
+        )))),
     }
 }
 
 /// Saves to the current path, or asks for one. Returns `true` on success.
-async fn save(mut doc: Signal<Document>, mut status: Signal<Option<String>>) -> bool {
+async fn save(mut doc: Signal<Document>, mut status: Status) -> bool {
     if doc.read().path().is_none() {
         return save_as(doc, status).await;
     }
@@ -191,7 +194,7 @@ async fn save(mut doc: Signal<Document>, mut status: Signal<Option<String>>) -> 
     report_save(result, &mut status)
 }
 
-async fn save_as(mut doc: Signal<Document>, mut status: Signal<Option<String>>) -> bool {
+async fn save_as(mut doc: Signal<Document>, mut status: Status) -> bool {
     let dialog = markdown_dialog(&doc.read()).set_file_name(doc.read().display_name());
     let Some(file) = dialog.save_file().await else {
         return false;
@@ -204,14 +207,16 @@ async fn save_as(mut doc: Signal<Document>, mut status: Signal<Option<String>>) 
     report_save(result, &mut status)
 }
 
-fn report_save(result: std::io::Result<()>, status: &mut Signal<Option<String>>) -> bool {
+fn report_save(result: std::io::Result<()>, status: &mut Status) -> bool {
     match result {
         Ok(()) => {
             status.set(None);
             true
         }
         Err(err) => {
-            status.set(Some(format!("Échec de l'enregistrement : {err}")));
+            status.set(Some(Notice::error(format!(
+                "Échec de l'enregistrement : {err}"
+            ))));
             false
         }
     }

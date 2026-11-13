@@ -3,7 +3,9 @@
 
 mod app;
 mod document;
+mod export;
 mod local_files;
+mod notice;
 
 use dioxus::desktop::{Config, LogicalSize, WindowBuilder};
 

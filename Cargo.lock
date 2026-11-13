@@ -5325,7 +5325,9 @@ dependencies = [
  "percent-encoding",
  "rfd 0.18.0",
  "rmd-core",
+ "rmd-export",
  "tempfile",
+ "tokio",
 ]
 
 [[package]]
