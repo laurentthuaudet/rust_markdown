@@ -74,5 +74,24 @@ input, select {
   justify-content: space-between;
   padding: 6px 12px;
   color: #fff;
-  background: var(--danger);
 }
+.status.error { background: var(--danger); }
+.status.info { background: var(--accent); }
+
+.menu { position: relative; }
+.menu-list {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.15);
+}
+.menu-list button { text-align: left; background: none; border: none; }
+.menu-list button:hover { background: var(--bg-muted); }
