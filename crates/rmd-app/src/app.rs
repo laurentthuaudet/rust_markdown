@@ -2,6 +2,8 @@
 
 use std::path::{Path, PathBuf};
 
+use dioxus::desktop::tao::event::{Event, WindowEvent};
+use dioxus::desktop::{WindowCloseBehaviour, use_wry_event_handler};
 use dioxus::prelude::*;
 use rfd::{AsyncFileDialog, AsyncMessageDialog, MessageButtons, MessageDialogResult, MessageLevel};
 use rmd_core::RenderConfig;
@@ -69,6 +71,16 @@ pub fn App() -> Element {
     let mut settings = use_context_provider(|| Signal::new(Settings::load()));
     let system_dark = use_system_dark();
     use_effect(move || settings.read().save());
+
+    use_wry_event_handler(move |event, _| {
+        if let Event::WindowEvent {
+            event: WindowEvent::CloseRequested,
+            ..
+        } = event
+        {
+            spawn(close_window(doc, status));
+        }
+    });
 
     let html = use_memo(move || {
         let doc = doc.read();
@@ -305,4 +317,21 @@ fn fire<T: 'static>(action: impl Future<Output = T> + 'static) {
     spawn(async move {
         action.await;
     });
+}
+
+/// Handles the window close button: asks about unsaved changes first.
+///
+/// The window is configured to hide on close, so it is shown again while the
+/// question is asked; it only really closes once the user agreed.
+async fn close_window(doc: Signal<Document>, status: Status) {
+    let window = dioxus::desktop::window();
+    if doc.read().is_dirty() {
+        window.set_visible(true);
+        window.set_focus();
+        if !confirm_discard(doc, status).await {
+            return;
+        }
+    }
+    window.set_close_behavior(WindowCloseBehaviour::WindowCloses);
+    window.close();
 }
