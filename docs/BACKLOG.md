@@ -7,21 +7,21 @@ Statuts : 🟡 à valider · 🟢 validé (à planifier) · ✅ fait
 
 ## Priorité haute
 
-### 🟡 Confirmation à la fermeture de la fenêtre
+### ✅ Confirmation à la fermeture de la fenêtre
 Fermer la fenêtre avec des modifications non enregistrées ne demande rien : le
 travail est perdu. C'est le seul vrai risque de perte de données.
 - Intercepter la fermeture (`WindowCloseBehaviour` / événement `CloseRequested` de
   Dioxus desktop) et réutiliser la boîte « Enregistrer / Ne pas enregistrer / Annuler ».
-- Effort estimé : petit.
+- Effort estimé : petit. — **Fait** (`feat/confirm-close`).
 
-### 🟡 Détecter les fichiers modifiés hors de l'application
+### ✅ Détecter les fichiers modifiés hors de l'application
 Si le fichier ouvert change sur le disque (autre éditeur, `git pull`…), l'éditeur
 garde l'ancienne version et un enregistrement écraserait les changements.
 - Surveiller le fichier ouvert (crate `notify`) ; proposer de recharger, ou avertir
   si le document a aussi des modifications locales.
 - Mettre à jour l'index de la bibliothèque à la volée au lieu d'attendre ⟳ ou le
   redémarrage.
-- Effort estimé : moyen.
+- Effort estimé : moyen. — **Fait** (`feat/watch-files`).
 
 ## Priorité moyenne
 
