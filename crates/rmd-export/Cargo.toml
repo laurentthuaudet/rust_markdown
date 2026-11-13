@@ -9,6 +9,10 @@ publish.workspace = true
 base64 = "0.23.1"
 rmd-core = { version = "0.1.0", path = "../rmd-core" }
 thiserror = "2.0.21"
+typst = "0.15.1"
+typst-assets = { version = "0.15.1", features = ["fonts"] }
+typst-layout = "0.15.1"
+typst-pdf = "0.15.1"
 
 [lints]
 workspace = true

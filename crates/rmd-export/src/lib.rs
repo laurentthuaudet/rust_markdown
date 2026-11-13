@@ -4,7 +4,9 @@
 //! needed at runtime.
 
 mod html;
+mod pdf;
 mod resources;
+mod typst_markup;
 
 use std::fmt;
 use std::path::{Path, PathBuf};
@@ -15,15 +17,17 @@ pub use resources::LocalImage;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Format {
     Html,
+    Pdf,
 }
 
 impl Format {
-    pub const ALL: &[Format] = &[Format::Html];
+    pub const ALL: &[Format] = &[Format::Html, Format::Pdf];
 
     /// File extension, without the dot.
     pub fn extension(self) -> &'static str {
         match self {
             Format::Html => "html",
+            Format::Pdf => "pdf",
         }
     }
 
@@ -31,6 +35,7 @@ impl Format {
     pub fn label(self) -> &'static str {
         match self {
             Format::Html => "HTML",
+            Format::Pdf => "PDF",
         }
     }
 }
@@ -73,12 +78,24 @@ impl<'a> Document<'a> {
 pub enum ExportError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
+    #[error("{format} export failed: {message}")]
+    Backend { format: Format, message: String },
+}
+
+impl ExportError {
+    pub(crate) fn backend(format: Format, message: impl fmt::Display) -> Self {
+        Self::Backend {
+            format,
+            message: message.to_string(),
+        }
+    }
 }
 
 /// Converts `doc` to `format` and returns the file contents.
 pub fn export(doc: &Document<'_>, format: Format) -> Result<Vec<u8>, ExportError> {
     match format {
         Format::Html => Ok(html::export(doc).into_bytes()),
+        Format::Pdf => pdf::export(doc),
     }
 }
 
