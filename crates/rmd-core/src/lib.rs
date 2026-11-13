@@ -7,6 +7,8 @@
 use std::panic::RefUnwindSafe;
 use std::sync::{Arc, LazyLock};
 
+mod footnotes;
+
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::options::{Plugins, URLRewriter};
 use comrak::plugins::syntect::SyntectAdapter;
@@ -59,6 +61,9 @@ pub fn options() -> Options<'static> {
     ext.alerts = true;
     ext.header_id_prefix = Some(String::new());
     ext.front_matter_delimiter = Some("---".to_owned());
+    // Keep footnote definitions where the author wrote them instead of
+    // moving them all to the end of the document.
+    options.parse.leave_footnote_definitions = true;
     options.render.r#unsafe = true;
     options.render.github_pre_lang = true;
     options.render.tasklist_classes = true;
@@ -76,12 +81,33 @@ pub fn render_html_with(markdown: &str, config: &RenderConfig) -> String {
     if let Some(rewriter) = &config.image_url_rewriter {
         options.extension.image_url_rewriter = Some(Arc::new(FnRewriter(rewriter.clone())));
     }
-    if config.strip_raw_html {
-        options.render.r#unsafe = false;
-    }
     let mut plugins = Plugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&*HIGHLIGHTER);
-    comrak::markdown_to_html_with_plugins(markdown, &options, &plugins)
+
+    let arena = Arena::new();
+    let root = comrak::parse_document(&arena, markdown, &options);
+    if config.strip_raw_html {
+        // Removed from the tree rather than disabling raw HTML output, which
+        // would also hide the footnote sections generated below.
+        let raw: Vec<_> = root
+            .descendants()
+            .filter(|node| {
+                matches!(
+                    node.data().value,
+                    NodeValue::HtmlBlock(_) | NodeValue::HtmlInline(_)
+                )
+            })
+            .collect();
+        for node in raw {
+            node.detach();
+        }
+    }
+    footnotes::place_in_place(&arena, root, &options, &plugins);
+
+    let mut html = String::new();
+    // Writing to a String cannot fail.
+    let _ = comrak::format_html_with_plugins(root, &options, &mut html, &plugins);
+    html
 }
 
 /// Returns the text of the first level-1 heading, or else of the first heading.
