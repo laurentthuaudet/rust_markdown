@@ -265,5 +265,81 @@ if (!window.rmdEditor) {
     }
   });
 
-  window.rmdEditor = { measure, lineAt, offsetOfLine, geometry: () => geometry };
+  // ---- Search highlights ---------------------------------------------------
+  // A layer behind the (transparent) textarea repeats the text in transparent
+  // ink with <mark> around matches. Offsets are UTF-16, like textarea values.
+  function highlightLayer() {
+    const layer = document.querySelector(".highlights");
+    return layer && layer.firstElementChild;
+  }
+
+  function syncHighlights() {
+    const inner = highlightLayer();
+    const ta = editor();
+    if (!inner || !ta) return;
+    // clientWidth excludes the scrollbar, so wrapping matches the textarea.
+    inner.style.width = `${ta.clientWidth}px`;
+    inner.style.transform = `translateY(${-ta.scrollTop}px)`;
+  }
+
+  function highlight(ranges, current) {
+    const inner = highlightLayer();
+    const ta = editor();
+    if (!inner || !ta) return;
+    if (!ranges.length) {
+      inner.replaceChildren();
+      return;
+    }
+    const text = ta.value;
+    const fragment = document.createDocumentFragment();
+    let last = 0;
+    ranges.forEach(([start, end], index) => {
+      fragment.append(text.slice(last, start));
+      const mark = document.createElement("mark");
+      if (index === current) mark.className = "current";
+      mark.textContent = text.slice(start, end);
+      fragment.append(mark);
+      last = end;
+    });
+    fragment.append(`${text.slice(last)}\n`);
+    inner.replaceChildren(fragment);
+    syncHighlights();
+
+    // Bring the current match into view (offsetTop accounts for wrapping).
+    const mark = inner.querySelector("mark.current");
+    if (mark) {
+      const top = mark.offsetTop;
+      if (top < ta.scrollTop + 40 || top > ta.scrollTop + ta.clientHeight - 60) {
+        ta.scrollTop = top - ta.clientHeight / 3;
+      }
+    }
+  }
+
+  // Selects a range in the editor and gives it the focus.
+  function select(start, end) {
+    const ta = editor();
+    if (!ta) return;
+    ta.focus();
+    ta.setSelectionRange(start, end);
+  }
+
+  document.addEventListener(
+    "scroll",
+    (event) => {
+      if (event.target instanceof Element && event.target.matches("textarea.editor")) {
+        syncHighlights();
+      }
+    },
+    true,
+  );
+  window.addEventListener("resize", syncHighlights);
+
+  window.rmdEditor = {
+    measure,
+    lineAt,
+    offsetOfLine,
+    geometry: () => geometry,
+    highlight,
+    select,
+  };
 }
