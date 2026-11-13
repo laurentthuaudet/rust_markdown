@@ -12,6 +12,9 @@ A desktop Markdown reader/editor for Windows, written in Rust with [Dioxus](http
 - Line numbers (toggle from the right-click menu), find & replace, light / dark /
   system theme; footnotes stay where they are written and in-document links
   (footnotes, anchors) scroll the preview
+- Safe editing: closing the window asks about unsaved changes; files changed by
+  other programs are reloaded (or you are asked, if you have local edits) and the
+  library index follows them live
 - **Export** to HTML (self-contained), PDF (Typst engine), Word (DOCX) and EPUB 3 —
   pure Rust, no external tool required
 - **Environments**: group Markdown files scattered across the disk into named
@@ -37,7 +40,7 @@ Preferences (theme, line numbers) are saved in `%APPDATA%\rust_markdown\settings
 
 The library index lives in `%APPDATA%\rust_markdown\library.db`. It only stores
 references: files are never moved or modified by the library. Files changed
-outside the application are reindexed at startup or with the **⟳** button.
+outside the application are reindexed as soon as they change.
 
 ## Workspace layout
 
