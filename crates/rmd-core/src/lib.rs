@@ -36,6 +36,9 @@ pub struct RenderConfig {
     pub image_url_rewriter: Option<UrlRewriter>,
     /// Drop raw HTML instead of passing it through (needed for strict XHTML).
     pub strip_raw_html: bool,
+    /// Add `data-sourcepos="line:col-line:col"` to block elements, so the
+    /// preview can be scrolled in step with the editor.
+    pub source_positions: bool,
 }
 
 struct FnRewriter(UrlRewriter);
@@ -81,6 +84,7 @@ pub fn render_html_with(markdown: &str, config: &RenderConfig) -> String {
     if let Some(rewriter) = &config.image_url_rewriter {
         options.extension.image_url_rewriter = Some(Arc::new(FnRewriter(rewriter.clone())));
     }
+    options.render.sourcepos = config.source_positions;
     let mut plugins = Plugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&*HIGHLIGHTER);
 
@@ -227,5 +231,23 @@ mod tests {
     fn extracts_plain_text() {
         let text = plain_text("# Title\n\nSome **bold** and `code`.\n\n- item one\n- item two");
         assert_eq!(text, "Title\nSome bold and code.\nitem one\nitem two");
+    }
+}
+
+#[cfg(test)]
+mod source_position_tests {
+    use super::*;
+
+    #[test]
+    fn marks_blocks_with_source_lines_on_demand() {
+        let markdown = "# Title\n\npara\n\n- item";
+        assert!(!render_html(markdown).contains("data-sourcepos"));
+        let config = RenderConfig {
+            source_positions: true,
+            ..Default::default()
+        };
+        let html = render_html_with(markdown, &config);
+        assert!(html.contains("data-sourcepos=\"1:1-1:7\">Title"), "{html}");
+        assert!(html.contains("<p data-sourcepos=\"3:1-3:4\""), "{html}");
     }
 }

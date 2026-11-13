@@ -59,14 +59,23 @@ pub fn place_in_place<'a>(
                 ));
             }
         }
+        let sourcepos = run[0].data().sourcepos;
+        let position = if options.render.sourcepos {
+            let last = run[run.len() - 1].data().sourcepos;
+            format!(
+                " data-sourcepos=\"{}:1-{}:1\"",
+                sourcepos.start.line, last.end.line
+            )
+        } else {
+            String::new()
+        };
         let html = if items.is_empty() {
             String::new()
         } else {
             format!(
-                "<section class=\"footnotes\" data-footnotes=\"\">\n<ol>\n{items}</ol>\n</section>\n"
+                "<section class=\"footnotes\"{position} data-footnotes=\"\">\n<ol>\n{items}</ol>\n</section>\n"
             )
         };
-        let sourcepos = run[0].data().sourcepos;
         let block = arena.alloc(AstNode::new(RefCell::new(Ast::new_with_sourcepos(
             NodeValue::HtmlBlock(NodeHtmlBlock {
                 block_type: 6,
