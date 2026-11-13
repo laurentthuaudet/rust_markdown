@@ -14,7 +14,7 @@ mod local_files;
 mod notice;
 mod settings;
 
-use dioxus::desktop::{Config, LogicalSize, WindowBuilder};
+use dioxus::desktop::{Config, LogicalSize, WindowBuilder, WindowCloseBehaviour};
 
 const APP_CSS: &str = include_str!("app.css");
 
@@ -30,7 +30,10 @@ fn main() {
             "<style>{}</style><style>{APP_CSS}</style>",
             rmd_core::STYLESHEET
         ))
-        .with_custom_protocol(local_files::SCHEME, local_files::handle);
+        .with_custom_protocol(local_files::SCHEME, local_files::handle)
+        // Closing only hides the window: the app decides whether to really
+        // close once unsaved changes are dealt with (see `app::close_window`).
+        .with_close_behaviour(WindowCloseBehaviour::WindowHides);
 
     dioxus::LaunchBuilder::desktop()
         .with_cfg(config)
