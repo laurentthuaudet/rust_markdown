@@ -1,0 +1,78 @@
+/* Application chrome (toolbar, panes, status bar). */
+:root {
+  --bg: #ffffff;
+  --bg-muted: #f6f8fa;
+  --border: #d1d9e0;
+  --text: #1f2328;
+  --text-muted: #59636e;
+  --accent: #0969da;
+  --danger: #cf222e;
+}
+* { box-sizing: border-box; }
+html, body, #main { height: 100%; margin: 0; }
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+}
+button {
+  font: inherit;
+  padding: 5px 12px;
+  color: var(--text);
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:hover { background: #eef1f4; }
+button.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+button.link { padding: 0 6px; background: none; border: none; color: inherit; }
+input, select {
+  font: inherit;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.app { display: flex; flex-direction: column; height: 100vh; outline: none; }
+
+.toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--border);
+}
+.spacer { flex: 1; }
+.segmented { display: flex; }
+.segmented button { border-radius: 0; margin-left: -1px; }
+.segmented button:first-child { border-radius: 6px 0 0 6px; }
+.segmented button:last-child { border-radius: 0 6px 6px 0; }
+.segmented button.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+.panes { display: flex; flex: 1; min-height: 0; }
+.editor {
+  flex: 1;
+  min-width: 0;
+  padding: 24px;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  border: none;
+  border-right: 1px solid var(--border);
+  outline: none;
+  resize: none;
+  tab-size: 4;
+}
+.preview { flex: 1; min-width: 0; overflow: auto; }
+
+.status {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px;
+  color: #fff;
+  background: var(--danger);
+}
