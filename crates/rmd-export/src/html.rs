@@ -26,6 +26,7 @@ pub fn export(doc: &Document<'_>) -> String {
                 })
                 .unwrap_or_else(|| url.to_owned())
         })),
+        ..Default::default()
     };
     let body = rmd_core::render_html_with(doc.markdown, &config);
     page(&doc.title, &body)

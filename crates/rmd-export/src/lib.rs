@@ -4,6 +4,7 @@
 //! needed at runtime.
 
 mod docx;
+mod epub;
 mod html;
 mod pdf;
 mod resources;
@@ -20,10 +21,11 @@ pub enum Format {
     Html,
     Pdf,
     Docx,
+    Epub,
 }
 
 impl Format {
-    pub const ALL: &[Format] = &[Format::Html, Format::Pdf, Format::Docx];
+    pub const ALL: &[Format] = &[Format::Html, Format::Pdf, Format::Docx, Format::Epub];
 
     /// File extension, without the dot.
     pub fn extension(self) -> &'static str {
@@ -31,6 +33,7 @@ impl Format {
             Format::Html => "html",
             Format::Pdf => "pdf",
             Format::Docx => "docx",
+            Format::Epub => "epub",
         }
     }
 
@@ -40,6 +43,7 @@ impl Format {
             Format::Html => "HTML",
             Format::Pdf => "PDF",
             Format::Docx => "Word (DOCX)",
+            Format::Epub => "EPUB",
         }
     }
 }
@@ -101,6 +105,7 @@ pub fn export(doc: &Document<'_>, format: Format) -> Result<Vec<u8>, ExportError
         Format::Html => Ok(html::export(doc).into_bytes()),
         Format::Pdf => pdf::export(doc),
         Format::Docx => docx::export(doc),
+        Format::Epub => epub::export(doc),
     }
 }
 

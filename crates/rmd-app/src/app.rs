@@ -54,6 +54,7 @@ pub fn App() -> Element {
         let doc = doc.read();
         let config = RenderConfig {
             image_url_rewriter: Some(local_files::image_rewriter(doc.base_dir())),
+            ..Default::default()
         };
         rmd_core::render_html_with(&doc.content, &config)
     });

@@ -32,6 +32,8 @@ pub type UrlRewriter = Arc<dyn Fn(&str) -> String + Send + Sync + RefUnwindSafe>
 pub struct RenderConfig {
     /// Optional rewriter applied to every image source.
     pub image_url_rewriter: Option<UrlRewriter>,
+    /// Drop raw HTML instead of passing it through (needed for strict XHTML).
+    pub strip_raw_html: bool,
 }
 
 struct FnRewriter(UrlRewriter);
@@ -73,6 +75,9 @@ pub fn render_html_with(markdown: &str, config: &RenderConfig) -> String {
     let mut options = options();
     if let Some(rewriter) = &config.image_url_rewriter {
         options.extension.image_url_rewriter = Some(Arc::new(FnRewriter(rewriter.clone())));
+    }
+    if config.strip_raw_html {
+        options.render.r#unsafe = false;
     }
     let mut plugins = Plugins::default();
     plugins.render.codefence_syntax_highlighter = Some(&*HIGHLIGHTER);
@@ -176,6 +181,7 @@ mod tests {
     fn rewrites_image_urls() {
         let config = RenderConfig {
             image_url_rewriter: Some(Arc::new(|url: &str| format!("base/{url}"))),
+            ..Default::default()
         };
         let html = render_html_with("![alt](img.png)", &config);
         assert!(html.contains("src=\"base/img.png\""), "{html}");
