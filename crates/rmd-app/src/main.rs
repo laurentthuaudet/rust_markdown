@@ -9,6 +9,7 @@ mod library;
 mod library_panel;
 mod local_files;
 mod notice;
+mod settings;
 
 use dioxus::desktop::{Config, LogicalSize, WindowBuilder};
 

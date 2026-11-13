@@ -5304,6 +5304,7 @@ name = "rmd-core"
 version = "0.1.0"
 dependencies = [
  "comrak",
+ "syntect",
 ]
 
 [[package]]
@@ -5390,6 +5391,8 @@ dependencies = [
  "rmd-core",
  "rmd-export",
  "rmd-store",
+ "serde",
+ "serde_json",
  "tempfile",
  "tokio",
 ]

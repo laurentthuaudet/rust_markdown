@@ -8,23 +8,36 @@ use std::panic::RefUnwindSafe;
 use std::sync::{Arc, LazyLock};
 
 mod footnotes;
+mod highlight;
 
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::options::{Plugins, URLRewriter};
-use comrak::plugins::syntect::SyntectAdapter;
+use comrak::plugins::syntect::{SyntectAdapter, SyntectAdapterBuilder};
 use comrak::{Arena, Options};
 
 pub use comrak;
+pub use highlight::{CodeTheme, highlight_css};
 
-/// Syntect theme used for inline-styled code blocks.
-const HIGHLIGHT_THEME: &str = "InspiredGitHub";
-
-/// Default stylesheet for rendered documents (preview, HTML and EPUB exports).
+/// Base stylesheet for rendered documents, without code colours.
+///
+/// Colours are CSS variables on `.markdown-body` so a host (the app's dark
+/// theme) can override them. See [`stylesheet`] for a complete light sheet.
 pub const STYLESHEET: &str = include_str!("style.css");
 
+/// Complete light stylesheet (base + code colours), used by the exporters.
+pub fn stylesheet() -> String {
+    format!("{STYLESHEET}\n{}", highlight_css(CodeTheme::Light))
+}
+
 /// Loading syntax definitions is relatively expensive, so do it once.
-static HIGHLIGHTER: LazyLock<SyntectAdapter> =
-    LazyLock::new(|| SyntectAdapter::new(Some(HIGHLIGHT_THEME)));
+///
+/// Code is highlighted with CSS classes (`hl-…`) rather than inline colours,
+/// so the colour theme can follow the application theme.
+static HIGHLIGHTER: LazyLock<SyntectAdapter> = LazyLock::new(|| {
+    SyntectAdapterBuilder::new()
+        .css_with_class_prefix(highlight::CLASS_PREFIX)
+        .build()
+});
 
 /// Rewrites the URL of images (e.g. to resolve paths relative to the document).
 pub type UrlRewriter = Arc<dyn Fn(&str) -> String + Send + Sync + RefUnwindSafe>;
@@ -191,8 +204,14 @@ mod tests {
     #[test]
     fn highlights_code_blocks() {
         let html = render_html("```rust\nfn main() {}\n```");
-        assert!(html.contains("lang=\"rust\""));
-        assert!(html.contains("style=\"color:"), "{html}");
+        assert!(
+            html.contains("<pre class=\"syntax-highlighting\">"),
+            "{html}"
+        );
+        assert!(
+            html.contains("<span class=\"hl-storage hl-type hl-function hl-rust\">fn</span>"),
+            "{html}"
+        );
     }
 
     #[test]

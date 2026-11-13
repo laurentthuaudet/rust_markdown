@@ -7,6 +7,10 @@
   --text-muted: #59636e;
   --accent: #0969da;
   --danger: #cf222e;
+  --hover: #eef1f4;
+  --accent-soft: #ddf4ff;
+  --mark: #fff8c5;
+  --shadow: rgba(31, 35, 40, 0.15);
 }
 * { box-sizing: border-box; }
 html, body, #main { height: 100%; margin: 0; }
@@ -25,17 +29,26 @@ button {
   border-radius: 6px;
   cursor: pointer;
 }
-button:hover { background: #eef1f4; }
+button:hover { background: var(--hover); }
 button.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
 button.link { padding: 0 6px; background: none; border: none; color: inherit; }
 input, select {
+  color: var(--text);
+  background: var(--bg);
   font: inherit;
   padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
 }
 
-.app { display: flex; flex-direction: column; height: 100vh; outline: none; }
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  outline: none;
+  color: var(--text);
+  background: var(--bg);
+}
 
 .toolbar {
   display: flex;
@@ -63,6 +76,7 @@ input, select {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
+  background: var(--bg);
   border: none;
   border-right: 1px solid var(--border);
   outline: none;
@@ -93,12 +107,12 @@ input, select {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(31, 35, 40, 0.15);
+  box-shadow: 0 8px 24px var(--shadow);
 }
 .menu-list button { text-align: left; background: none; border: none; }
 .menu-list button:hover { background: var(--bg-muted); }
 
-.toolbar > button.active { color: var(--accent); border-color: var(--accent); background: #ddf4ff; }
+.toolbar > button.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 button.icon { padding: 0 8px; line-height: 22px; background: none; border-color: transparent; }
 button.icon:hover { border-color: var(--border); }
 button.danger { color: var(--danger); }
@@ -134,7 +148,7 @@ button.danger { color: var(--danger); }
   border-radius: 6px;
   cursor: pointer;
 }
-.env-list li:hover { background: #eaeef2; }
+.env-list li:hover { background: var(--hover); }
 .env-list li.active { color: #fff; background: var(--accent); }
 .count { font-size: 12px; opacity: 0.75; }
 .inline-input { width: 100%; }
@@ -148,7 +162,7 @@ button.danger { color: var(--danger); }
   padding: 1px 8px;
   font-size: 12px;
   color: var(--accent);
-  background: #ddf4ff;
+  background: var(--accent-soft);
   border: 1px solid transparent;
   border-radius: 999px;
 }
@@ -171,7 +185,7 @@ button.tag:hover { border-color: var(--accent); }
 .result:hover .remove { visibility: visible; }
 .result-meta { margin: 2px 0 4px; font-size: 12px; color: var(--text-muted); word-break: break-all; }
 .snippet { margin: 4px 0 0; font-size: 12px; color: var(--text-muted); }
-.snippet mark { color: var(--text); background: #fff8c5; }
+.snippet mark { color: var(--text); background: var(--mark); }
 
 /* Document bar */
 .docbar {
@@ -198,5 +212,36 @@ button.tag:hover { border-color: var(--accent); }
 .tags-input { flex: 1; min-width: 160px; padding: 2px 8px; font-size: 13px; }
 
 /* Briefly highlight the target of an in-document link. */
-@keyframes anchor-flash { from { background: #fff8c5; } to { background: transparent; } }
+@keyframes anchor-flash { from { background: var(--mark); } to { background: transparent; } }
 .anchor-target { animation: anchor-flash 1.5s ease-out; }
+
+/* Dark theme: the root element carries data-theme="dark". */
+.app[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --bg-muted: #151b23;
+  --border: #3d444d;
+  --text: #f0f6fc;
+  --text-muted: #9198a1;
+  --accent: #4493f8;
+  --danger: #da3633;
+  --hover: #212830;
+  --accent-soft: #121d2f;
+  --mark: #5a4a12;
+  --shadow: rgba(1, 4, 9, 0.6);
+}
+.app[data-theme="dark"] .markdown-body {
+  --md-text: #f0f6fc;
+  --md-muted: #9198a1;
+  --md-border: #3d444d;
+  --md-link: #4493f8;
+  --md-code-bg: #151b23;
+  --md-inline-code-bg: rgba(101, 108, 118, 0.2);
+  --md-table-stripe: #151b23;
+  --md-note: #4493f8;
+  --md-tip: #3fb950;
+  --md-important: #ab7df8;
+  --md-warning: #d29922;
+  --md-caution: #f85149;
+}
+.app[data-theme="dark"] .markdown-body img { background: #fff; }

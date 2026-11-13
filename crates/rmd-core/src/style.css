@@ -1,9 +1,23 @@
-/* Default stylesheet for rendered Markdown documents. */
+/* Default stylesheet for rendered Markdown documents.
+   Colours are variables so that a host page can switch them (dark theme). */
 .markdown-body {
+  --md-text: #1f2328;
+  --md-muted: #59636e;
+  --md-border: #d1d9e0;
+  --md-link: #0969da;
+  --md-code-bg: #f6f8fa;
+  --md-inline-code-bg: rgba(129, 139, 152, 0.12);
+  --md-table-stripe: #f6f8fa;
+  --md-note: #0969da;
+  --md-tip: #1a7f37;
+  --md-important: #8250df;
+  --md-warning: #9a6700;
+  --md-caution: #cf222e;
+
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.6;
-  color: #1f2328;
+  color: var(--md-text);
   max-width: 860px;
   margin: 0 auto;
   padding: 24px 32px;
@@ -15,12 +29,12 @@
   font-weight: 600;
   line-height: 1.25;
 }
-.markdown-body h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
-.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
+.markdown-body h1 { font-size: 2em; border-bottom: 1px solid var(--md-border); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--md-border); padding-bottom: 0.3em; }
 .markdown-body h3 { font-size: 1.25em; }
 .markdown-body p, .markdown-body ul, .markdown-body ol,
 .markdown-body blockquote, .markdown-body table, .markdown-body pre { margin: 0 0 1em; }
-.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a { color: var(--md-link); text-decoration: none; }
 .markdown-body a:hover { text-decoration: underline; }
 .markdown-body ul, .markdown-body ol { padding-left: 2em; }
 .markdown-body li + li { margin-top: 0.25em; }
@@ -28,14 +42,14 @@
 .markdown-body li.task-list-item input { margin: 0 0.4em 0 -1.4em; vertical-align: middle; }
 .markdown-body blockquote {
   padding: 0 1em;
-  color: #59636e;
-  border-left: 0.25em solid #d1d9e0;
+  color: var(--md-muted);
+  border-left: 0.25em solid var(--md-border);
 }
 .markdown-body code {
   font-family: "Cascadia Code", Consolas, monospace;
   font-size: 85%;
   padding: 0.2em 0.4em;
-  background: rgba(129, 139, 152, 0.12);
+  background: var(--md-inline-code-bg);
   border-radius: 6px;
 }
 .markdown-body pre {
@@ -43,20 +57,20 @@
   overflow: auto;
   font-size: 85%;
   line-height: 1.45;
-  background: #f6f8fa;
+  background: var(--md-code-bg);
   border-radius: 6px;
 }
 .markdown-body pre code { padding: 0; background: transparent; font-size: 100%; }
 .markdown-body table { border-collapse: collapse; display: block; overflow: auto; }
-.markdown-body th, .markdown-body td { padding: 6px 13px; border: 1px solid #d1d9e0; }
-.markdown-body th { font-weight: 600; background: #f6f8fa; }
-.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body th, .markdown-body td { padding: 6px 13px; border: 1px solid var(--md-border); }
+.markdown-body th { font-weight: 600; background: var(--md-table-stripe); }
+.markdown-body tr:nth-child(2n) td { background: var(--md-table-stripe); }
 .markdown-body img { max-width: 100%; }
-.markdown-body hr { height: 0.25em; margin: 24px 0; background: #d1d9e0; border: 0; }
-.markdown-body .markdown-alert { padding: 0.5em 1em; margin-bottom: 1em; border-left: 0.25em solid #0969da; }
+.markdown-body hr { height: 0.25em; margin: 24px 0; background: var(--md-border); border: 0; }
+.markdown-body .markdown-alert { padding: 0.5em 1em; margin-bottom: 1em; border-left: 0.25em solid var(--md-note); }
 .markdown-body .markdown-alert-title { font-weight: 600; margin-bottom: 0.25em; }
-.markdown-body .markdown-alert-warning { border-color: #9a6700; }
-.markdown-body .markdown-alert-caution { border-color: #cf222e; }
-.markdown-body .markdown-alert-tip { border-color: #1a7f37; }
-.markdown-body .markdown-alert-important { border-color: #8250df; }
-.markdown-body .footnotes { font-size: 85%; color: #59636e; border-top: 1px solid #d1d9e0; }
+.markdown-body .markdown-alert-tip { border-color: var(--md-tip); }
+.markdown-body .markdown-alert-important { border-color: var(--md-important); }
+.markdown-body .markdown-alert-warning { border-color: var(--md-warning); }
+.markdown-body .markdown-alert-caution { border-color: var(--md-caution); }
+.markdown-body .footnotes { font-size: 85%; color: var(--md-muted); border-top: 1px solid var(--md-border); }

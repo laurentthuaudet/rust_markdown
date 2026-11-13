@@ -43,7 +43,7 @@ pub fn export(doc: &Document<'_>) -> Result<Vec<u8>, ExportError> {
     builder.set_title(doc.title.clone());
     builder.set_generator("rust_markdown");
     builder
-        .stylesheet(rmd_core::STYLESHEET.as_bytes())
+        .stylesheet(rmd_core::stylesheet().as_bytes())
         .map_err(fail)?;
 
     let images = std::mem::take(&mut *images.lock().expect("image list lock"));

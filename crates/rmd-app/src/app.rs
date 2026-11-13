@@ -13,6 +13,7 @@ use crate::library::Library;
 use crate::library_panel::LibraryPanel;
 use crate::local_files;
 use crate::notice::{Notice, Status, StatusBar};
+use crate::settings::{Settings, use_system_dark};
 
 const PREVIEW_SCRIPT: &str = include_str!("preview.js");
 const EDITOR_SCRIPT: &str = include_str!("editor.js");
@@ -62,6 +63,9 @@ pub fn App() -> Element {
     let mut mode = use_signal(|| ViewMode::Split);
     let mut show_library = use_signal(|| true);
     use_context_provider(Library::open);
+    let mut settings = use_context_provider(|| Signal::new(Settings::load()));
+    let system_dark = use_system_dark();
+    use_effect(move || settings.read().save());
 
     let html = use_memo(move || {
         let doc = doc.read();
@@ -106,8 +110,15 @@ pub fn App() -> Element {
     };
 
     let current_mode = mode();
+    let theme = settings.read().theme;
+    let dark = theme.is_dark(system_dark());
+    let code_css = rmd_core::highlight_css(theme.code_theme(system_dark()));
     rsx! {
-        div { class: "app", onkeydown: on_keydown,
+        style { "{code_css}" }
+        div {
+            class: "app",
+            "data-theme": if dark { "dark" } else { "light" },
+            onkeydown: on_keydown,
             header { class: "toolbar",
                 button {
                     class: if show_library() { "active" },
@@ -121,6 +132,14 @@ pub fn App() -> Element {
                 button { title: "Enregistrer sous (Ctrl+Maj+S)", onclick: move |_| { fire(save_as(doc, status)); }, "Enregistrer sous" }
                 ExportMenu { doc, status }
                 div { class: "spacer" }
+                button {
+                    title: "Thème (Système → Clair → Sombre)",
+                    onclick: move |_| {
+                        let next = settings.read().theme.next();
+                        settings.write().theme = next;
+                    },
+                    "{theme.label()}"
+                }
                 div { class: "segmented",
                     for view in ViewMode::ALL {
                         button {

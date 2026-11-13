@@ -40,7 +40,7 @@ pub fn page(title: &str, body: &str) -> String {
          <title>{title}</title>\n<style>\n{css}</style>\n</head>\n\
          <body>\n<article class=\"markdown-body\">\n{body}</article>\n</body>\n</html>\n",
         title = escape(title),
-        css = rmd_core::STYLESHEET,
+        css = rmd_core::stylesheet(),
     )
 }
 
