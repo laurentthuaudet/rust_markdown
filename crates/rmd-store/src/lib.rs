@@ -5,6 +5,7 @@
 //! only keeps references and an index (title, modification date, full text):
 //! the files themselves are never moved or modified.
 
+mod documents;
 mod environments;
 mod schema;
 
@@ -12,6 +13,7 @@ use std::path::Path;
 
 use rusqlite::Connection;
 
+pub use documents::{DocumentId, DocumentInfo, RefreshReport, is_markdown};
 pub use environments::{Environment, EnvironmentId};
 
 #[derive(Debug, thiserror::Error)]

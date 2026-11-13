@@ -11,6 +11,26 @@ const MIGRATIONS: &[&str] = &[
         description TEXT NOT NULL DEFAULT '',
         created_at  INTEGER NOT NULL
     );",
+    // 2: documents, environment membership and full-text index.
+    "CREATE TABLE documents (
+        id          INTEGER PRIMARY KEY,
+        path        TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        file_name   TEXT NOT NULL,
+        title       TEXT NOT NULL DEFAULT '',
+        modified_at INTEGER,
+        missing     INTEGER NOT NULL DEFAULT 0,
+        indexed_at  INTEGER NOT NULL
+    );
+    CREATE TABLE environment_documents (
+        environment_id INTEGER NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
+        document_id    INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        added_at       INTEGER NOT NULL,
+        PRIMARY KEY (environment_id, document_id)
+    );
+    CREATE INDEX environment_documents_by_document ON environment_documents(document_id);
+    CREATE VIRTUAL TABLE documents_fts USING fts5(
+        title, body, tokenize = 'unicode61 remove_diacritics 2'
+    );",
 ];
 
 pub fn migrate(conn: &Connection) -> rusqlite::Result<()> {

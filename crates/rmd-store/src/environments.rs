@@ -57,7 +57,8 @@ impl Store {
         self.environment(id)
     }
 
-    /// Deletes the environment. The referenced files are left untouched.
+    /// Deletes the environment. The referenced files are left untouched;
+    /// documents no longer in any environment are dropped from the index.
     pub fn delete_environment(&self, id: EnvironmentId) -> Result<()> {
         let changed = self
             .conn
@@ -65,7 +66,7 @@ impl Store {
         if changed == 0 {
             return Err(StoreError::NotFound);
         }
-        Ok(())
+        self.remove_orphan_documents()
     }
 
     pub fn environment(&self, id: EnvironmentId) -> Result<Environment> {
@@ -89,7 +90,8 @@ impl Store {
     }
 }
 
-const SELECT_ENVIRONMENT: &str = "SELECT e.id, e.name, e.description, e.created_at, 0
+const SELECT_ENVIRONMENT: &str = "SELECT e.id, e.name, e.description, e.created_at,
+            (SELECT COUNT(*) FROM environment_documents ed WHERE ed.environment_id = e.id)
      FROM environments e";
 
 fn row_to_environment(row: &rusqlite::Row<'_>) -> rusqlite::Result<Environment> {
