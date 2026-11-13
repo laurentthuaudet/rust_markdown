@@ -8,6 +8,7 @@
 mod documents;
 mod environments;
 mod schema;
+mod tags;
 
 use std::path::Path;
 
@@ -15,6 +16,7 @@ use rusqlite::Connection;
 
 pub use documents::{DocumentId, DocumentInfo, RefreshReport, is_markdown};
 pub use environments::{Environment, EnvironmentId};
+pub use tags::{TagCount, normalize_tags};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {

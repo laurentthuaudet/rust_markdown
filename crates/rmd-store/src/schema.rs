@@ -31,6 +31,17 @@ const MIGRATIONS: &[&str] = &[
     CREATE VIRTUAL TABLE documents_fts USING fts5(
         title, body, tokenize = 'unicode61 remove_diacritics 2'
     );",
+    // 3: tags attached to documents.
+    "CREATE TABLE tags (
+        id   INTEGER PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE COLLATE NOCASE
+    );
+    CREATE TABLE document_tags (
+        document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+        tag_id      INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+        PRIMARY KEY (document_id, tag_id)
+    );
+    CREATE INDEX document_tags_by_tag ON document_tags(tag_id);",
 ];
 
 pub fn migrate(conn: &Connection) -> rusqlite::Result<()> {

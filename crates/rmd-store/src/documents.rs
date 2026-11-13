@@ -234,7 +234,7 @@ impl Store {
             "DELETE FROM documents WHERE id NOT IN (SELECT document_id FROM environment_documents);
              DELETE FROM documents_fts WHERE rowid NOT IN (SELECT id FROM documents);",
         )?;
-        Ok(())
+        self.remove_unused_tags()
     }
 }
 
