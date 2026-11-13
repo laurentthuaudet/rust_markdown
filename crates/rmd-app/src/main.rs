@@ -13,6 +13,7 @@ mod library_panel;
 mod local_files;
 mod notice;
 mod settings;
+mod watcher;
 
 use dioxus::desktop::{Config, LogicalSize, WindowBuilder, WindowCloseBehaviour};
 

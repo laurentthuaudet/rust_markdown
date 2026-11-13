@@ -84,6 +84,44 @@ impl Document {
         self.path = Some(path);
         Ok(())
     }
+
+    /// Compares the file on disk with the last loaded/saved version.
+    ///
+    /// Our own saves therefore report [`DiskState::Unchanged`].
+    pub fn disk_state(&self) -> DiskState {
+        let Some(path) = &self.path else {
+            return DiskState::Unchanged;
+        };
+        match fs::read_to_string(path) {
+            Ok(raw) => {
+                let content = raw.replace("\r\n", "\n");
+                if content == self.saved {
+                    DiskState::Unchanged
+                } else {
+                    DiskState::Modified(content)
+                }
+            }
+            Err(err) if err.kind() == io::ErrorKind::NotFound => DiskState::Missing,
+            // Probably mid-write by another program: check again on the next event.
+            Err(_) => DiskState::Unchanged,
+        }
+    }
+
+    /// Replaces the content with the version found on disk (discarding edits).
+    pub fn reload(&mut self, content: String) {
+        self.saved = content.clone();
+        self.content = content;
+    }
+}
+
+/// State of the open file on disk, see [`Document::disk_state`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DiskState {
+    Unchanged,
+    /// Changed by another program; holds the new (LF-normalised) content.
+    Modified(String),
+    /// Deleted or moved away.
+    Missing,
 }
 
 #[cfg(test)]
@@ -153,5 +191,33 @@ mod line_ending_tests {
         let mut doc = Document::open(&path).unwrap();
         doc.save().unwrap();
         assert_eq!(fs::read_to_string(&path).unwrap(), "a\nb\n");
+    }
+}
+
+#[cfg(test)]
+mod disk_tests {
+    use super::*;
+
+    #[test]
+    fn detects_external_changes_but_not_own_saves() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("watched.md");
+        fs::write(&path, "v1\r\n").unwrap();
+        let mut doc = Document::open(&path).unwrap();
+        assert_eq!(doc.disk_state(), DiskState::Unchanged);
+
+        doc.content = "v2\n".into();
+        doc.save().unwrap();
+        assert_eq!(doc.disk_state(), DiskState::Unchanged);
+
+        fs::write(&path, "v3\r\n").unwrap();
+        assert_eq!(doc.disk_state(), DiskState::Modified("v3\n".into()));
+        doc.reload("v3\n".into());
+        assert!(!doc.is_dirty());
+        assert_eq!(doc.disk_state(), DiskState::Unchanged);
+
+        fs::remove_file(&path).unwrap();
+        assert_eq!(doc.disk_state(), DiskState::Missing);
+        assert_eq!(Document::new().disk_state(), DiskState::Unchanged);
     }
 }

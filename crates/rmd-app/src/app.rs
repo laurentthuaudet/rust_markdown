@@ -18,6 +18,7 @@ use crate::library_panel::LibraryPanel;
 use crate::local_files;
 use crate::notice::{Notice, Status, StatusBar};
 use crate::settings::{Settings, use_system_dark};
+use crate::watcher::use_file_watcher;
 
 const PREVIEW_SCRIPT: &str = include_str!("preview.js");
 const EDITOR_SCRIPT: &str = include_str!("editor.js");
@@ -71,6 +72,8 @@ pub fn App() -> Element {
     let mut settings = use_context_provider(|| Signal::new(Settings::load()));
     let system_dark = use_system_dark();
     use_effect(move || settings.read().save());
+
+    use_file_watcher(doc, status);
 
     use_wry_event_handler(move |event, _| {
         if let Event::WindowEvent {

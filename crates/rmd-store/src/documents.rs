@@ -51,6 +51,16 @@ fn modified_at(path: &Path) -> Option<i64> {
     Some(modified.duration_since(UNIX_EPOCH).ok()?.as_secs() as i64)
 }
 
+/// Absolute path with native separators, so that the same file always maps
+/// to the same row (`C:/a/b.md` and `C:\a\b.md` are one file on Windows).
+fn normalize(path: &Path) -> std::io::Result<PathBuf> {
+    let absolute = std::path::absolute(path)?;
+    if cfg!(windows) {
+        Ok(PathBuf::from(absolute.to_string_lossy().replace('/', "\\")))
+    } else {
+        Ok(absolute)
+    }
+}
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -61,7 +71,7 @@ impl Store {
     /// Adding a file already in the environment is a no-op (besides reindexing).
     pub fn add_document(&self, env: EnvironmentId, path: &Path) -> Result<DocumentId> {
         self.environment(env)?;
-        let path = std::path::absolute(path)?;
+        let path = normalize(path)?;
         if !path.is_file() {
             return Err(StoreError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
@@ -115,7 +125,7 @@ impl Store {
 
     /// Looks a document up by path.
     pub fn document_by_path(&self, path: &Path) -> Result<Option<DocumentInfo>> {
-        let path = std::path::absolute(path)?;
+        let path = normalize(path)?;
         Ok(self
             .conn
             .query_row(
@@ -174,6 +184,44 @@ impl Store {
     pub fn reindex(&self, id: DocumentId) -> Result<()> {
         let doc = self.document(id)?;
         self.index(id, &doc.path)
+    }
+
+    /// Brings the index entry of `path` up to date after a change on disk.
+    ///
+    /// Returns `true` if the index changed (reindexed, flagged missing or
+    /// found again); unknown paths and unchanged files return `false`.
+    pub fn sync_file(&self, path: &Path) -> Result<bool> {
+        let Some(doc) = self.document_by_path(path)? else {
+            return Ok(false);
+        };
+        match modified_at(&doc.path) {
+            None if doc.missing => Ok(false),
+            None => {
+                self.conn
+                    .execute("UPDATE documents SET missing = 1 WHERE id = ?1", [doc.id.0])?;
+                Ok(true)
+            }
+            Some(mtime) if !doc.missing && Some(mtime) == doc.modified_at => Ok(false),
+            Some(_) => {
+                self.index(doc.id, &doc.path)?;
+                Ok(true)
+            }
+        }
+    }
+
+    /// Folders containing indexed documents (to watch them for changes).
+    pub fn document_directories(&self) -> Result<Vec<PathBuf>> {
+        let mut stmt = self.conn.prepare("SELECT path FROM documents")?;
+        let paths: Vec<String> = stmt
+            .query_map([], |row| row.get(0))?
+            .collect::<rusqlite::Result<_>>()?;
+        let mut dirs: Vec<PathBuf> = paths
+            .iter()
+            .filter_map(|path| Path::new(path).parent().map(Path::to_path_buf))
+            .collect();
+        dirs.sort();
+        dirs.dedup();
+        Ok(dirs)
     }
 
     /// Inserts or refreshes the document row for an absolute path.
@@ -383,6 +431,56 @@ mod tests {
         assert_eq!(fts_count(&store, "fresh"), 1);
         assert_eq!(fts_count(&store, "old"), 0);
         assert!(store.document(gone_id).unwrap().missing);
+    }
+    #[test]
+    fn syncs_single_files_after_external_changes() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("live.md");
+        fs::write(&file, "before").unwrap();
+        let store = Store::open_in_memory().unwrap();
+        let env = store.create_environment("E", "").unwrap().id;
+        let id = store.add_document(env, &file).unwrap();
+
+        // Unchanged file, unknown file: nothing to do.
+        assert!(!store.sync_file(&file).unwrap());
+        assert!(!store.sync_file(&dir.path().join("other.md")).unwrap());
+
+        store
+            .conn
+            .execute("UPDATE documents SET modified_at = 0 WHERE id = ?1", [id.0])
+            .unwrap();
+        fs::write(&file, "after").unwrap();
+        assert!(store.sync_file(&file).unwrap());
+        assert_eq!(fts_count(&store, "after"), 1);
+
+        fs::remove_file(&file).unwrap();
+        assert!(store.sync_file(&file).unwrap());
+        assert!(store.document(id).unwrap().missing);
+        assert!(!store.sync_file(&file).unwrap());
+
+        fs::write(&file, "back").unwrap();
+        assert!(store.sync_file(&file).unwrap());
+        assert!(!store.document(id).unwrap().missing);
+        assert_eq!(
+            store.document_directories().unwrap(),
+            [dir.path().to_path_buf()]
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn treats_slash_and_backslash_paths_as_the_same_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("same.md");
+        fs::write(&file, "x").unwrap();
+        let slashed = PathBuf::from(file.to_string_lossy().replace('\\', "/"));
+
+        let store = Store::open_in_memory().unwrap();
+        let env = store.create_environment("E", "").unwrap().id;
+        let id = store.add_document(env, &slashed).unwrap();
+        assert_eq!(store.add_document(env, &file).unwrap(), id);
+        assert_eq!(store.document_by_path(&file).unwrap().unwrap().id, id);
+        assert_eq!(store.document(id).unwrap().path, file);
     }
 
     #[test]
