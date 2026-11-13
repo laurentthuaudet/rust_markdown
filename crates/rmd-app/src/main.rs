@@ -3,7 +3,10 @@
 
 mod app;
 mod document;
+mod document_bar;
 mod export;
+mod library;
+mod library_panel;
 mod local_files;
 mod notice;
 

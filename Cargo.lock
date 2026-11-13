@@ -5383,11 +5383,13 @@ dependencies = [
 name = "rust-markdown"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "dioxus",
  "percent-encoding",
  "rfd 0.18.0",
  "rmd-core",
  "rmd-export",
+ "rmd-store",
  "tempfile",
  "tokio",
 ]

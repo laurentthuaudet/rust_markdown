@@ -6,11 +6,13 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 dioxus = { version = "0.7.10", features = ["desktop"] }
 percent-encoding = "2.3.2"
 rfd = "0.18.0"
 rmd-core = { version = "0.1.0", path = "../rmd-core" }
 rmd-export = { version = "0.1.0", path = "../rmd-export" }
+rmd-store = { version = "0.1.0", path = "../rmd-store" }
 tokio = { version = "1", features = ["rt"] }
 
 [lints]
