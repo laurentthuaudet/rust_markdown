@@ -8,6 +8,7 @@ use rmd_core::RenderConfig;
 
 use crate::document::Document;
 use crate::document_bar::DocumentBar;
+use crate::editor::Editor;
 use crate::export::ExportMenu;
 use crate::library::Library;
 use crate::library_panel::LibraryPanel;
@@ -58,7 +59,7 @@ fn initial_document() -> (Document, Option<Notice>) {
 #[component]
 pub fn App() -> Element {
     let initial = use_hook(initial_document);
-    let mut doc = use_signal(|| initial.0.clone());
+    let doc = use_signal(|| initial.0.clone());
     let status = use_signal(|| initial.1.clone());
     let mut mode = use_signal(|| ViewMode::Split);
     let mut show_library = use_signal(|| true);
@@ -158,13 +159,7 @@ pub fn App() -> Element {
                     DocumentBar { doc, status }
                     main { class: "panes",
                         if current_mode != ViewMode::Preview {
-                            textarea {
-                                class: "editor",
-                                spellcheck: "false",
-                                placeholder: "Écrivez du Markdown ici…",
-                                value: "{doc.read().content}",
-                                oninput: move |event| doc.write().content = event.value(),
-                            }
+                            Editor { doc }
                         }
                         if current_mode != ViewMode::Editor {
                             article { class: "preview",

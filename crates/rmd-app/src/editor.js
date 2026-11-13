@@ -47,9 +47,12 @@ if (!window.rmdEditor) {
     mirror.replaceChildren(fragment);
     const tops = [];
     const heights = [];
+    // Fractional sizes: rounding 22.4px lines to 22px drifts over long files.
+    const origin = mirror.getBoundingClientRect().top;
     for (const child of mirror.children) {
-      tops.push(child.offsetTop);
-      heights.push(child.offsetHeight);
+      const rect = child.getBoundingClientRect();
+      tops.push(rect.top - origin);
+      heights.push(rect.height);
     }
     geometry = { tops, heights, padTop: parseFloat(cs.paddingTop) };
     window.dispatchEvent(new CustomEvent("rmd-geometry"));
@@ -164,6 +167,7 @@ if (!window.rmdEditor) {
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (target.matches("textarea.editor")) {
+        syncGutter();
         if (ignoreEditor) ignoreEditor = false;
         else requestAnimationFrame(syncPreview);
       } else if (target.matches(".preview")) {
@@ -196,6 +200,70 @@ if (!window.rmdEditor) {
     anchors = null;
     queueMeasure();
   }).observe(root, { childList: true, subtree: true, characterData: true });
+
+  // Content replaced by Dioxus (file opened…) changes the textarea value
+  // without any input event or DOM mutation: poll cheaply for that case.
+  let lastValue = null;
+  setInterval(() => {
+    const ta = editor();
+    if (ta && ta.value !== lastValue) {
+      lastValue = ta.value;
+      queueMeasure();
+    }
+  }, 400);
+
+  // ---- Line-number gutter --------------------------------------------------
+  // The `.gutter` element exists only when line numbers are enabled.
+  let gutterKey = "";
+
+  function renderGutter() {
+    const gutter = document.querySelector(".gutter");
+    if (!gutter || !geometry) return;
+    const lines = gutter.firstElementChild;
+    const { heights, padTop } = geometry;
+    // Rebuild only when the line layout changed.
+    const key = `${padTop}|${heights.join(",")}`;
+    if (key !== gutterKey || lines.childElementCount !== heights.length) {
+      gutterKey = key;
+      gutter.style.setProperty("--digits", String(heights.length).length);
+      lines.style.paddingTop = `${padTop}px`;
+      const fragment = document.createDocumentFragment();
+      heights.forEach((height, index) => {
+        const div = document.createElement("div");
+        div.textContent = index + 1;
+        div.style.height = `${height}px`;
+        fragment.appendChild(div);
+      });
+      lines.replaceChildren(fragment);
+    }
+    syncGutter();
+    markCurrentLine();
+  }
+
+  function syncGutter() {
+    const gutter = document.querySelector(".gutter");
+    const ta = editor();
+    if (gutter && ta) gutter.firstElementChild.style.transform = `translateY(${-ta.scrollTop}px)`;
+  }
+
+  let currentLine = -1;
+  function markCurrentLine() {
+    const gutter = document.querySelector(".gutter");
+    const ta = editor();
+    if (!gutter || !ta) return;
+    const line = ta.value.slice(0, ta.selectionStart).split("\n").length - 1;
+    const lines = gutter.firstElementChild.children;
+    if (lines[currentLine]) lines[currentLine].classList.remove("current");
+    if (lines[line]) lines[line].classList.add("current");
+    currentLine = line;
+  }
+
+  window.addEventListener("rmd-geometry", renderGutter);
+  document.addEventListener("selectionchange", () => {
+    if (document.activeElement && document.activeElement.matches("textarea.editor")) {
+      markCurrentLine();
+    }
+  });
 
   window.rmdEditor = { measure, lineAt, offsetOfLine, geometry: () => geometry };
 }
