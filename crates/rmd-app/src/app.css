@@ -196,3 +196,7 @@ button.tag:hover { border-color: var(--accent); }
 .chip button { font-size: 11px; }
 .docbar select { padding: 2px 6px; font-size: 13px; }
 .tags-input { flex: 1; min-width: 160px; padding: 2px 8px; font-size: 13px; }
+
+/* Briefly highlight the target of an in-document link. */
+@keyframes anchor-flash { from { background: #fff8c5; } to { background: transparent; } }
+.anchor-target { animation: anchor-flash 1.5s ease-out; }
