@@ -34,6 +34,7 @@ pub fn export(doc: &Document<'_>) -> Result<Vec<u8>, ExportError> {
             }
         })),
         strip_raw_html: true,
+        ..Default::default()
     };
     let body = xhtml_fixups(&rmd_core::render_html_with(doc.markdown, &config));
 

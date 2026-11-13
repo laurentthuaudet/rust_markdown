@@ -15,6 +15,7 @@ use crate::local_files;
 use crate::notice::{Notice, Status, StatusBar};
 
 const PREVIEW_SCRIPT: &str = include_str!("preview.js");
+const EDITOR_SCRIPT: &str = include_str!("editor.js");
 
 /// Which panes are visible.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,6 +67,7 @@ pub fn App() -> Element {
         let doc = doc.read();
         let config = RenderConfig {
             image_url_rewriter: Some(local_files::image_rewriter(doc.base_dir())),
+            source_positions: true,
             ..Default::default()
         };
         rmd_core::render_html_with(&doc.content, &config)
@@ -78,9 +80,11 @@ pub fn App() -> Element {
             .set_title(&format!("{marker}{} — Rust Markdown", doc.display_name()));
     });
 
-    // In-document links (footnotes…) scroll the preview instead of opening a browser.
+    // In-document links (footnotes…) scroll the preview instead of opening a
+    // browser; editor and preview scroll together.
     use_effect(|| {
         let _ = document::eval(PREVIEW_SCRIPT);
+        let _ = document::eval(EDITOR_SCRIPT);
     });
 
     let on_keydown = move |event: KeyboardEvent| {
