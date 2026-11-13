@@ -245,3 +245,28 @@ button.tag:hover { border-color: var(--accent); }
   --md-caution: #f85149;
 }
 .app[data-theme="dark"] .markdown-body img { background: #fff; }
+
+/* Editor with optional line-number gutter (filled by editor.js). */
+.editor-wrap {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+}
+.editor-wrap .editor { border-right: none; }
+.gutter {
+  --digits: 2;
+  flex-shrink: 0;
+  width: calc(var(--digits) * 1ch + 20px);
+  overflow: hidden;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  text-align: right;
+  user-select: none;
+  background: var(--bg-muted);
+  border-right: 1px solid var(--border);
+}
+.gutter-lines > div { padding-right: 8px; opacity: 0.7; }
+.gutter-lines > div.current { color: var(--text); opacity: 1; font-weight: 600; }

@@ -4,6 +4,7 @@
 mod app;
 mod document;
 mod document_bar;
+mod editor;
 mod export;
 mod library;
 mod library_panel;

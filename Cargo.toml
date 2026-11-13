@@ -9,7 +9,9 @@ license = "MIT"
 publish = false
 
 [workspace.lints.rust]
-unsafe_code = "forbid"
+# `deny` rather than `forbid`: the app needs one audited `unsafe` call to show a
+# native context menu (see rmd-app/src/editor.rs).
+unsafe_code = "deny"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
