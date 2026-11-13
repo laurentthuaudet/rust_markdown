@@ -10,6 +10,7 @@ use crate::document::Document;
 use crate::document_bar::DocumentBar;
 use crate::editor::Editor;
 use crate::export::ExportMenu;
+use crate::find_bar::FindState;
 use crate::library::Library;
 use crate::library_panel::LibraryPanel;
 use crate::local_files;
@@ -64,6 +65,7 @@ pub fn App() -> Element {
     let mut mode = use_signal(|| ViewMode::Split);
     let mut show_library = use_signal(|| true);
     use_context_provider(Library::open);
+    let find = use_context_provider(FindState::new);
     let mut settings = use_context_provider(|| Signal::new(Settings::load()));
     let system_dark = use_system_dark();
     use_effect(move || settings.read().save());
@@ -105,6 +107,12 @@ pub fn App() -> Element {
             "s" => fire(save(doc, status)),
             "o" => fire(open(doc, status)),
             "n" => fire(new_document(doc, status)),
+            "f" | "h" => {
+                if mode() == ViewMode::Preview {
+                    mode.set(ViewMode::Split);
+                }
+                find.show(key.eq_ignore_ascii_case("h"));
+            }
             _ => return,
         };
         event.prevent_default();
@@ -159,7 +167,7 @@ pub fn App() -> Element {
                     DocumentBar { doc, status }
                     main { class: "panes",
                         if current_mode != ViewMode::Preview {
-                            Editor { doc }
+                            Editor { doc, status }
                         }
                         if current_mode != ViewMode::Editor {
                             article { class: "preview",

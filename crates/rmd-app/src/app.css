@@ -11,6 +11,8 @@
   --accent-soft: #ddf4ff;
   --mark: #fff8c5;
   --shadow: rgba(31, 35, 40, 0.15);
+  --match: rgba(255, 223, 93, 0.45);
+  --match-current: #ff9632;
 }
 * { box-sizing: border-box; }
 html, body, #main { height: 100%; margin: 0; }
@@ -229,6 +231,8 @@ button.tag:hover { border-color: var(--accent); }
   --accent-soft: #121d2f;
   --mark: #5a4a12;
   --shadow: rgba(1, 4, 9, 0.6);
+  --match: rgba(187, 128, 9, 0.4);
+  --match-current: #d18616;
 }
 .app[data-theme="dark"] .markdown-body {
   --md-text: #f0f6fc;
@@ -247,12 +251,14 @@ button.tag:hover { border-color: var(--accent); }
 .app[data-theme="dark"] .markdown-body img { background: #fff; }
 
 /* Editor with optional line-number gutter (filled by editor.js). */
-.editor-wrap {
+.editor-column {
   display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
   border-right: 1px solid var(--border);
 }
+.editor-wrap { display: flex; flex: 1; min-height: 0; }
 .editor-wrap .editor { border-right: none; }
 .gutter {
   --digits: 2;
@@ -270,3 +276,37 @@ button.tag:hover { border-color: var(--accent); }
 }
 .gutter-lines > div { padding-right: 8px; opacity: 0.7; }
 .gutter-lines > div.current { color: var(--text); opacity: 1; font-weight: 600; }
+
+/* Search highlights behind a transparent textarea (drawn by editor.js). */
+.editor-stack { position: relative; display: flex; flex: 1; min-width: 0; background: var(--bg); }
+.editor-stack .editor { position: relative; z-index: 1; background: transparent; }
+.highlights { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.highlights > div {
+  padding: 24px;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  tab-size: 4;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  color: transparent;
+}
+.highlights mark { color: transparent; background: var(--match); border-radius: 2px; }
+.highlights mark.current { background: var(--match-current); }
+
+/* Find & replace bar */
+.find-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--border);
+}
+.find-row { display: flex; align-items: center; gap: 4px; }
+.find-row input { flex: 1; min-width: 80px; padding: 3px 8px; }
+.find-indent { width: 30px; flex-shrink: 0; }
+.find-count { min-width: 90px; font-size: 12px; text-align: center; color: var(--text-muted); }
+button.toggle { font-weight: 600; }
+button.toggle.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+button:disabled { opacity: 0.45; cursor: default; }
