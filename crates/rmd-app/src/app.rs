@@ -14,6 +14,8 @@ use crate::library_panel::LibraryPanel;
 use crate::local_files;
 use crate::notice::{Notice, Status, StatusBar};
 
+const PREVIEW_SCRIPT: &str = include_str!("preview.js");
+
 /// Which panes are visible.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ViewMode {
@@ -74,6 +76,11 @@ pub fn App() -> Element {
         let marker = if doc.is_dirty() { "● " } else { "" };
         dioxus::desktop::window()
             .set_title(&format!("{marker}{} — Rust Markdown", doc.display_name()));
+    });
+
+    // In-document links (footnotes…) scroll the preview instead of opening a browser.
+    use_effect(|| {
+        let _ = document::eval(PREVIEW_SCRIPT);
     });
 
     let on_keydown = move |event: KeyboardEvent| {
