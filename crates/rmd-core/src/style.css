@@ -1,0 +1,62 @@
+/* Default stylesheet for rendered Markdown documents. */
+.markdown-body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2328;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 32px;
+  word-wrap: break-word;
+}
+.markdown-body h1, .markdown-body h2, .markdown-body h3,
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  margin: 1.5em 0 0.6em;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.markdown-body h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body p, .markdown-body ul, .markdown-body ol,
+.markdown-body blockquote, .markdown-body table, .markdown-body pre { margin: 0 0 1em; }
+.markdown-body a { color: #0969da; text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+.markdown-body li + li { margin-top: 0.25em; }
+.markdown-body li.task-list-item { list-style: none; }
+.markdown-body li.task-list-item input { margin: 0 0.4em 0 -1.4em; vertical-align: middle; }
+.markdown-body blockquote {
+  padding: 0 1em;
+  color: #59636e;
+  border-left: 0.25em solid #d1d9e0;
+}
+.markdown-body code {
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 85%;
+  padding: 0.2em 0.4em;
+  background: rgba(129, 139, 152, 0.12);
+  border-radius: 6px;
+}
+.markdown-body pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background: #f6f8fa;
+  border-radius: 6px;
+}
+.markdown-body pre code { padding: 0; background: transparent; font-size: 100%; }
+.markdown-body table { border-collapse: collapse; display: block; overflow: auto; }
+.markdown-body th, .markdown-body td { padding: 6px 13px; border: 1px solid #d1d9e0; }
+.markdown-body th { font-weight: 600; background: #f6f8fa; }
+.markdown-body tr:nth-child(2n) td { background: #f6f8fa; }
+.markdown-body img { max-width: 100%; }
+.markdown-body hr { height: 0.25em; margin: 24px 0; background: #d1d9e0; border: 0; }
+.markdown-body .markdown-alert { padding: 0.5em 1em; margin-bottom: 1em; border-left: 0.25em solid #0969da; }
+.markdown-body .markdown-alert-title { font-weight: 600; margin-bottom: 0.25em; }
+.markdown-body .markdown-alert-warning { border-color: #9a6700; }
+.markdown-body .markdown-alert-caution { border-color: #cf222e; }
+.markdown-body .markdown-alert-tip { border-color: #1a7f37; }
+.markdown-body .markdown-alert-important { border-color: #8250df; }
+.markdown-body .footnotes { font-size: 85%; color: #59636e; border-top: 1px solid #d1d9e0; }
