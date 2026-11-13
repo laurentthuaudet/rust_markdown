@@ -51,6 +51,16 @@ fn modified_at(path: &Path) -> Option<i64> {
     Some(modified.duration_since(UNIX_EPOCH).ok()?.as_secs() as i64)
 }
 
+/// Absolute path with native separators, so that the same file always maps
+/// to the same row (`C:/a/b.md` and `C:\a\b.md` are one file on Windows).
+fn normalize(path: &Path) -> std::io::Result<PathBuf> {
+    let absolute = std::path::absolute(path)?;
+    if cfg!(windows) {
+        Ok(PathBuf::from(absolute.to_string_lossy().replace('/', "\\")))
+    } else {
+        Ok(absolute)
+    }
+}
 fn path_to_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
 }
@@ -61,7 +71,7 @@ impl Store {
     /// Adding a file already in the environment is a no-op (besides reindexing).
     pub fn add_document(&self, env: EnvironmentId, path: &Path) -> Result<DocumentId> {
         self.environment(env)?;
-        let path = std::path::absolute(path)?;
+        let path = normalize(path)?;
         if !path.is_file() {
             return Err(StoreError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
@@ -115,7 +125,7 @@ impl Store {
 
     /// Looks a document up by path.
     pub fn document_by_path(&self, path: &Path) -> Result<Option<DocumentInfo>> {
-        let path = std::path::absolute(path)?;
+        let path = normalize(path)?;
         Ok(self
             .conn
             .query_row(
@@ -455,6 +465,22 @@ mod tests {
             store.document_directories().unwrap(),
             [dir.path().to_path_buf()]
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn treats_slash_and_backslash_paths_as_the_same_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("same.md");
+        fs::write(&file, "x").unwrap();
+        let slashed = PathBuf::from(file.to_string_lossy().replace('\\', "/"));
+
+        let store = Store::open_in_memory().unwrap();
+        let env = store.create_environment("E", "").unwrap().id;
+        let id = store.add_document(env, &slashed).unwrap();
+        assert_eq!(store.add_document(env, &file).unwrap(), id);
+        assert_eq!(store.document_by_path(&file).unwrap().unwrap().id, id);
+        assert_eq!(store.document(id).unwrap().path, file);
     }
 
     #[test]
