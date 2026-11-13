@@ -3,6 +3,7 @@
 //! Every exporter is pure Rust: no external tool (pandoc, LaTeX, browser) is
 //! needed at runtime.
 
+mod docx;
 mod html;
 mod pdf;
 mod resources;
@@ -18,16 +19,18 @@ pub use resources::LocalImage;
 pub enum Format {
     Html,
     Pdf,
+    Docx,
 }
 
 impl Format {
-    pub const ALL: &[Format] = &[Format::Html, Format::Pdf];
+    pub const ALL: &[Format] = &[Format::Html, Format::Pdf, Format::Docx];
 
     /// File extension, without the dot.
     pub fn extension(self) -> &'static str {
         match self {
             Format::Html => "html",
             Format::Pdf => "pdf",
+            Format::Docx => "docx",
         }
     }
 
@@ -36,6 +39,7 @@ impl Format {
         match self {
             Format::Html => "HTML",
             Format::Pdf => "PDF",
+            Format::Docx => "Word (DOCX)",
         }
     }
 }
@@ -96,6 +100,7 @@ pub fn export(doc: &Document<'_>, format: Format) -> Result<Vec<u8>, ExportError
     match format {
         Format::Html => Ok(html::export(doc).into_bytes()),
         Format::Pdf => pdf::export(doc),
+        Format::Docx => docx::export(doc),
     }
 }
 
