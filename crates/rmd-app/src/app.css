@@ -310,3 +310,5 @@ button.tag:hover { border-color: var(--accent); }
 button.toggle { font-weight: 600; }
 button.toggle.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 button:disabled { opacity: 0.45; cursor: default; }
+
+.app-mark { flex-shrink: 0; margin: 0 6px 0 2px; color: var(--accent); }
