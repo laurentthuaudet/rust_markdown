@@ -29,9 +29,9 @@ impl Theme {
 
     pub fn label(self) -> &'static str {
         match self {
-            Theme::System => "◐ Système",
-            Theme::Light => "☀ Clair",
-            Theme::Dark => "☾ Sombre",
+            Theme::System => "Système",
+            Theme::Light => "Clair",
+            Theme::Dark => "Sombre",
         }
     }
 

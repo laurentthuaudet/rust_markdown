@@ -2,6 +2,8 @@
 
 use dioxus::prelude::*;
 
+use crate::icons::{Glyph, Icon};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NoticeKind {
     Info,
@@ -44,8 +46,9 @@ pub fn StatusBar(status: Status) -> Element {
     };
     rsx! {
         footer { class,
-            span { "{notice.text}" }
-            button { class: "link", title: "Fermer", onclick: move |_| status.set(None), "✕" }
+            Glyph { icon: if notice.kind == NoticeKind::Error { Icon::Alert } else { Icon::Info } }
+            span { class: "status-text", "{notice.text}" }
+            button { class: "icon", title: "Fermer", onclick: move |_| status.set(None), Glyph { icon: Icon::Close } }
         }
     }
 }

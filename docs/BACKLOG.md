@@ -30,12 +30,12 @@ Word n'accepte que des images matricielles : les SVG sont actuellement ignorés.
 - Rasteriser les SVG (crate `resvg`) avant l'insertion.
 - Effort estimé : petit à moyen. — **Fait** (`feat/docx-svg-images`) : rendu en PNG 2x avec `resvg`.
 
-### 🟡 Installeur, icône et association des fichiers `.md`
+### ✅ Installeur, icône et association des fichiers `.md`
 Aujourd'hui il faut lancer `cargo run` ou copier l'exécutable à la main.
 - Icône de l'application et de la fenêtre.
 - Installeur MSI (`cargo-wix`) ou `dx bundle`, avec association « Ouvrir avec » pour
   `.md` / `.markdown` (l'application sait déjà ouvrir un fichier passé en argument).
-- Effort estimé : moyen.
+- Effort estimé : moyen. — **Fait** : icône Caretta (`feat/app-icon`), installeur NSIS avec associations `.md` (`feat/installer`).
 
 ## Petites améliorations repérées
 
