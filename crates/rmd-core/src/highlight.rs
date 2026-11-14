@@ -8,8 +8,11 @@ use std::sync::LazyLock;
 use comrak::adapters::SyntaxHighlighterAdapter;
 use comrak::plugins::syntect::SyntectAdapter;
 
-use syntect::highlighting::{Color, ThemeSet};
+use syntect::easy::HighlightLines;
+use syntect::highlighting::{Color, FontStyle, Style, Theme, ThemeSet};
 use syntect::html::{ClassStyle, css_for_theme_with_class_style};
+use syntect::parsing::SyntaxSet;
+use syntect::util::LinesWithEndings;
 
 /// Prefix of the classes emitted on highlighted code.
 pub(crate) const CLASS_PREFIX: &str = "hl-";
@@ -98,9 +101,75 @@ impl SyntaxHighlighterAdapter for ClassHighlighter {
     }
 }
 
+/// A run of code text sharing one style, for exporters that cannot use CSS.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CodeToken {
+    pub text: String,
+    /// RGB colour.
+    pub color: (u8, u8, u8),
+    pub bold: bool,
+    pub italic: bool,
+}
+
+static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(SyntaxSet::load_defaults_newlines);
+static LIGHT_THEME: LazyLock<Theme> = LazyLock::new(|| {
+    ThemeSet::load_defaults()
+        .themes
+        .remove(CodeTheme::Light.syntect_name())
+        .unwrap_or_default()
+});
+
+/// Highlights `code` with the light theme, one token list per line (without
+/// the line breaks). Unknown languages come back as plain, uncoloured text.
+pub fn highlight_code(code: &str, lang: &str) -> Vec<Vec<CodeToken>> {
+    let syntax = SYNTAXES
+        .find_syntax_by_token(lang)
+        .unwrap_or_else(|| SYNTAXES.find_syntax_plain_text());
+    let mut highlighter = HighlightLines::new(syntax, &LIGHT_THEME);
+    LinesWithEndings::from(code)
+        .map(|line| {
+            let regions = highlighter
+                .highlight_line(line, &SYNTAXES)
+                .unwrap_or_else(|_| vec![(Style::default(), line)]);
+            regions
+                .into_iter()
+                .filter_map(|(style, text)| {
+                    let text = text.trim_end_matches(['\n', '\r']);
+                    (!text.is_empty()).then(|| CodeToken {
+                        text: text.to_owned(),
+                        color: (style.foreground.r, style.foreground.g, style.foreground.b),
+                        bold: style.font_style.contains(FontStyle::BOLD),
+                        italic: style.font_style.contains(FontStyle::ITALIC),
+                    })
+                })
+                .collect()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn highlights_code_into_styled_tokens() {
+        let lines = highlight_code("fn main() {}\n// done\n", "rust");
+        assert_eq!(lines.len(), 2);
+        let keyword = &lines[0][0];
+        assert_eq!(keyword.text, "fn");
+        let plain = lines[0]
+            .iter()
+            .find(|token| token.text.contains("main"))
+            .unwrap();
+        assert_ne!(keyword.color, plain.color);
+        let joined: String = lines[1].iter().map(|token| token.text.as_str()).collect();
+        assert_eq!(joined, "// done");
+
+        // Unknown language: still split into lines, text preserved.
+        let lines = highlight_code("a\nb", "nope");
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[1][0].text, "b");
+    }
 
     #[test]
     fn generates_both_themes() {

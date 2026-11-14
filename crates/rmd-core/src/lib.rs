@@ -16,7 +16,7 @@ use comrak::plugins::syntect::SyntectAdapterBuilder;
 use comrak::{Arena, Options};
 
 pub use comrak;
-pub use highlight::{CodeTheme, highlight_css};
+pub use highlight::{CodeTheme, CodeToken, highlight_code, highlight_css};
 
 /// Base stylesheet for rendered documents, without code colours.
 ///
