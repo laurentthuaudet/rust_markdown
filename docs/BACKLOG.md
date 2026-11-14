@@ -25,10 +25,10 @@ garde l'ancienne version et un enregistrement écraserait les changements.
 
 ## Priorité moyenne
 
-### 🟡 Images SVG dans l'export DOCX
+### ✅ Images SVG dans l'export DOCX
 Word n'accepte que des images matricielles : les SVG sont actuellement ignorés.
 - Rasteriser les SVG (crate `resvg`) avant l'insertion.
-- Effort estimé : petit à moyen.
+- Effort estimé : petit à moyen. — **Fait** (`feat/docx-svg-images`) : rendu en PNG 2x avec `resvg`.
 
 ### 🟡 Installeur, icône et association des fichiers `.md`
 Aujourd'hui il faut lancer `cargo run` ou copier l'exécutable à la main.
