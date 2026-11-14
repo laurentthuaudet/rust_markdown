@@ -71,6 +71,10 @@ pub fn export(doc: &Document<'_>) -> Result<Vec<u8>, ExportError> {
     Ok(buffer.into_inner())
 }
 
+/// Shaded run used for every piece of a code block.
+fn code_run() -> Run {
+    Run::new().shading(Shading::new().fill(CODE_BACKGROUND))
+}
 fn styles() -> Vec<Style> {
     let heading_sizes = [32, 26, 24, 22, 20, 20];
     let mut styles: Vec<Style> = heading_sizes
@@ -240,16 +244,33 @@ impl<'p> Writer<'p> {
                 self.push_paragraph(paragraph);
             }
             NodeValue::CodeBlock(code) => {
-                let mut run = Run::new().shading(Shading::new().fill(CODE_BACKGROUND));
+                let lang = code.info.split_whitespace().next().unwrap_or("");
                 let literal = code.literal.strip_suffix('\n').unwrap_or(&code.literal);
-                for (i, line) in literal.split('\n').enumerate() {
+                let mut paragraph = self.decorate(Paragraph::new().style("SourceCode"), ctx);
+                // One coloured run per token, same palette as the HTML export.
+                for (i, line) in rmd_core::highlight_code(literal, lang)
+                    .into_iter()
+                    .enumerate()
+                {
                     if i > 0 {
-                        run = run.add_break(BreakType::TextWrapping);
+                        paragraph =
+                            paragraph.add_run(code_run().add_break(BreakType::TextWrapping));
                     }
-                    run = run.add_text(line);
+                    for token in line {
+                        let (r, g, b) = token.color;
+                        let mut run = code_run()
+                            .color(format!("{r:02X}{g:02X}{b:02X}"))
+                            .add_text(token.text);
+                        if token.bold {
+                            run = run.bold();
+                        }
+                        if token.italic {
+                            run = run.italic();
+                        }
+                        paragraph = paragraph.add_run(run);
+                    }
                 }
-                let paragraph = self.decorate(Paragraph::new().style("SourceCode"), ctx);
-                self.push_paragraph(paragraph.add_run(run));
+                self.push_paragraph(paragraph);
             }
             NodeValue::BlockQuote | NodeValue::MultilineBlockQuote(_) => {
                 let mut inner = ctx.clone();
@@ -571,6 +592,19 @@ mod tests {
         assert!(xml.contains("<w:i />") || xml.contains("<w:i/>"));
         assert!(xml.contains("<w:strike />") || xml.contains("<w:strike/>"));
         assert!(xml.contains(CODE_FONT));
+    }
+
+    #[test]
+    fn colours_code_blocks() {
+        let xml = document_xml("```rust\nfn main() {}\nlet x = 1;\n```");
+        // Several colours (one per token kind) and the line break is kept.
+        let colours: std::collections::HashSet<&str> = xml
+            .match_indices("<w:color w:val=\"")
+            .map(|(i, tag)| &xml[i + tag.len()..i + tag.len() + 6])
+            .collect();
+        assert!(colours.len() >= 2, "{colours:?}");
+        assert!(xml.contains(">fn</w:t>"), "{xml}");
+        assert!(xml.contains("textWrapping"), "{xml}");
     }
 
     #[test]

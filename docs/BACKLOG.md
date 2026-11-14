@@ -3,7 +3,7 @@
 Idées identifiées mais **pas encore validées**. Chaque entrée devient une branche
 `feat/…` ou `fix/…` une fois acceptée.
 
-Statuts : 🟡 à valider · 🟢 validé (à planifier) · ✅ fait
+Statuts : 🟡 à valider · 🟢 validé (à planifier) · ✅ fait · ❌ non retenu
 
 ## Priorité haute
 
@@ -39,14 +39,17 @@ Aujourd'hui il faut lancer `cargo run` ou copier l'exécutable à la main.
 
 ## Petites améliorations repérées
 
-### 🟡 Attribut `lang` des blocs de code
+### ✅ Attribut `lang` des blocs de code
 Depuis la coloration par classes CSS, comrak n'écrit plus `lang="rust"` sur les
 `<pre>` du HTML exporté (sans effet visible, mais l'information est perdue).
+**Fait** (`fix/code-lang-attribute`) : `lang` et `data-sourcepos` sont conservés.
 
-### 🟡 Coloration syntaxique dans les exports DOCX
+### ✅ Coloration syntaxique dans les exports DOCX
 Les blocs de code sont en police à chasse fixe sur fond gris, mais sans couleurs
 (le PDF, lui, est coloré par Typst).
+**Fait** (`feat/docx-code-highlighting`) : même palette que l'export HTML.
 
-### 🟡 EPUB en plusieurs chapitres
+### ❌ EPUB en plusieurs chapitres
 Le livre contient un seul chapitre ; on pourrait découper aux titres de niveau 1 en
 gardant les notes de bas de page avec leur chapitre.
+**Non retenu** pour le moment.
