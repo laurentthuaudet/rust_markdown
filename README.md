@@ -66,6 +66,29 @@ Run the tests:
 cargo test --workspace
 ```
 
+## Installer
+
+A Windows installer (`setup.exe`, per-user, no admin rights) is built with
+[cargo-packager](https://github.com/crabnebula-dev/cargo-packager):
+
+```bash
+cargo install cargo-packager --locked
+```
+
+```bash
+cargo packager --release -p rust-markdown
+```
+
+The installer lands in `dist/`. It adds Start menu (and optionally desktop)
+shortcuts, an uninstaller, and registers Rust Markdown for `.md`, `.markdown`,
+`.mdown` and `.mkd` files ("Open with"). Pushing a `v*` tag builds it in CI and
+attaches it to a GitHub release.
+
+The application icon comes from the Caretta design system
+(`crates/rmd-app/assets/icon.svg`); `build.rs` renders it into the executable.
+
+## Command-line tools
+
 Try an exporter from the command line:
 
 ```bash

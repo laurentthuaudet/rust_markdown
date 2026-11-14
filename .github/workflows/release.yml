@@ -1,0 +1,24 @@
+name: Release
+
+# Pushing a tag like v0.2.0 builds the Windows installer and attaches it to
+# a GitHub release of the same name.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-packager --locked
+      - run: cargo packager --release -p rust-markdown
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" dist/*-setup.exe --title "${{ github.ref_name }}" --generate-notes
