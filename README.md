@@ -9,7 +9,8 @@ A desktop Markdown reader/editor for Windows, written in Rust with [Dioxus](http
   and local images
 - **Edit** in a plain-text editor with a live side-by-side preview
   (editor only / side by side / preview only); both panes scroll together
-- Line numbers (toggle from the right-click menu), find & replace, light / dark /
+- Interface styled with the Caretta design system (icon, colours, typefaces);
+  line numbers (toggle from the right-click menu), find & replace, light / dark /
   system theme; footnotes stay where they are written and in-document links
   (footnotes, anchors) scroll the preview
 - Safe editing: closing the window asks about unsaved changes; files changed by
@@ -34,7 +35,7 @@ A desktop Markdown reader/editor for Windows, written in Rust with [Dioxus](http
 | Filter | Library sidebar → full text, name, date range, tags |
 | Find / replace | `Ctrl+F` / `Ctrl+H` (or right-click in the editor), `Enter` / `Shift+Enter` to move, `Échap` to close |
 | Line numbers | Right-click in the editor → **Numéros de ligne** |
-| Theme | Toolbar → **◐ Système / ☀ Clair / ☾ Sombre** |
+| Theme | Toolbar → **Système / Clair / Sombre** (Caretta « Surface » and « Profondeur ») |
 
 Preferences (theme, line numbers) are saved in `%APPDATA%\rust_markdown\settings.json`.
 
