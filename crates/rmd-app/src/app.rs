@@ -13,11 +13,12 @@ use crate::document_bar::DocumentBar;
 use crate::editor::Editor;
 use crate::export::ExportMenu;
 use crate::find_bar::FindState;
+use crate::icons::{Glyph, Icon};
 use crate::library::Library;
 use crate::library_panel::LibraryPanel;
 use crate::local_files;
 use crate::notice::{Notice, Status, StatusBar};
-use crate::settings::{Settings, use_system_dark};
+use crate::settings::{Settings, Theme, use_system_dark};
 use crate::watcher::use_file_watcher;
 
 const PREVIEW_SCRIPT: &str = include_str!("preview.js");
@@ -149,6 +150,7 @@ pub fn App() -> Element {
                     class: if show_library() { "active" },
                     title: "Afficher/masquer la bibliothèque",
                     onclick: move |_| show_library.toggle(),
+                    Glyph { icon: Icon::Sidebar }
                     "Bibliothèque"
                 }
                 button { title: "Nouveau (Ctrl+N)", onclick: move |_| { fire(new_document(doc, status)); }, "Nouveau" }
@@ -158,11 +160,18 @@ pub fn App() -> Element {
                 ExportMenu { doc, status }
                 div { class: "spacer" }
                 button {
-                    title: "Thème (Système → Clair → Sombre)",
+                    title: "Thème : Système, Clair — Surface ou Sombre — Profondeur",
                     onclick: move |_| {
                         let next = settings.read().theme.next();
                         settings.write().theme = next;
                     },
+                    Glyph {
+                        icon: match theme {
+                            Theme::System => Icon::Monitor,
+                            Theme::Light => Icon::Sun,
+                            Theme::Dark => Icon::Moon,
+                        },
+                    }
                     "{theme.label()}"
                 }
                 div { class: "segmented",

@@ -3,6 +3,8 @@
 use std::path::Path;
 
 use dioxus::prelude::*;
+
+use crate::icons::{Glyph, Icon};
 use rmd_store::EnvironmentId;
 
 use crate::document::Document;
@@ -59,7 +61,7 @@ pub fn DocumentBar(doc: Signal<Document>, status: Status) -> Element {
                                 status.set(Some(Notice::error(err)));
                             }
                         },
-                        "✕"
+                        Glyph { icon: Icon::Close, size: 12 }
                     }
                 }
             }

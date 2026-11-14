@@ -3,6 +3,8 @@
 use std::path::{Path, PathBuf};
 
 use dioxus::prelude::*;
+
+use crate::icons::{Glyph, Icon};
 use rfd::AsyncFileDialog;
 use rmd_export::Format;
 
@@ -19,7 +21,8 @@ pub fn ExportMenu(doc: Signal<Document>, status: Status) -> Element {
             button {
                 title: "Exporter le document",
                 onclick: move |_| open.toggle(),
-                "Exporter ▾"
+                "Exporter"
+                Glyph { icon: Icon::ChevronDown, size: 14 }
             }
             if open() {
                 div { class: "menu-list",

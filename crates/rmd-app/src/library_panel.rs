@@ -1,6 +1,8 @@
 //! Sidebar listing environments and their documents, with filters.
 
 use dioxus::prelude::*;
+
+use crate::icons::{Glyph, Icon};
 use rfd::{AsyncFileDialog, AsyncMessageDialog, MessageButtons, MessageDialogResult, MessageLevel};
 use rmd_store::{EnvironmentId, Filter, MATCH_END, MATCH_START, SearchHit};
 
@@ -108,13 +110,13 @@ pub fn LibraryPanel(doc: Signal<Document>, status: Status) -> Element {
                         class: "icon",
                         title: "Réindexer les fichiers modifiés",
                         onclick: move |_| refresh(status),
-                        "⟳"
+                        Glyph { icon: Icon::Refresh }
                     }
                     button {
                         class: "icon",
                         title: "Nouvel environnement",
                         onclick: move |_| creating.set(Some(String::new())),
-                        "+"
+                        Glyph { icon: Icon::Plus }
                     }
                 }
             }
@@ -293,7 +295,7 @@ fn ResultItem(
                                 status.set(Some(Notice::error(err)));
                             }
                         },
-                        "✕"
+                        Glyph { icon: Icon::Close, size: 14 }
                     }
                 }
             }

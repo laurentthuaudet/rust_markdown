@@ -2,6 +2,8 @@
 
 use dioxus::prelude::*;
 
+use crate::icons::{Glyph, Icon};
+
 use crate::document::Document;
 use crate::find::{find_all, replace_all, replace_one, to_utf16};
 use crate::notice::{Notice, Status};
@@ -170,7 +172,7 @@ pub fn FindBar(doc: Signal<Document>, status: Status) -> Element {
                     class: "icon",
                     title: if replace() { "Masquer le remplacement" } else { "Afficher le remplacement (Ctrl+H)" },
                     onclick: move |_| replace.toggle(),
-                    if replace() { "▾" } else { "▸" }
+                    Glyph { icon: if replace() { Icon::ChevronDown } else { Icon::ChevronRight } }
                 }
                 input {
                     r#type: "text",
@@ -188,9 +190,9 @@ pub fn FindBar(doc: Signal<Document>, status: Status) -> Element {
                     "Aa"
                 }
                 span { class: "find-count", "{counter}" }
-                button { class: "icon", title: "Précédent (Maj+Entrée)", disabled: total == 0, onclick: move |_| step(-1), "↑" }
-                button { class: "icon", title: "Suivant (Entrée)", disabled: total == 0, onclick: move |_| step(1), "↓" }
-                button { class: "icon", title: "Fermer (Échap)", onclick: move |_| close(), "✕" }
+                button { class: "icon", title: "Précédent (Maj+Entrée)", disabled: total == 0, onclick: move |_| step(-1), Glyph { icon: Icon::ArrowUp } }
+                button { class: "icon", title: "Suivant (Entrée)", disabled: total == 0, onclick: move |_| step(1), Glyph { icon: Icon::ArrowDown } }
+                button { class: "icon", title: "Fermer (Échap)", onclick: move |_| close(), Glyph { icon: Icon::Close } }
             }
             if replace() {
                 div { class: "find-row",
