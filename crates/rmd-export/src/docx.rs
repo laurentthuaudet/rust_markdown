@@ -536,13 +536,19 @@ impl<'p> Writer<'p> {
     fn picture(&self, url: &str) -> Option<Pic> {
         let image = LocalImage::resolve(url, self.base_dir)?;
         let bytes = image.read().ok()?;
-        // `Pic::new` panics on undecodable data: validate first. SVG is not
-        // supported by Word pictures without a raster fallback.
-        let decoded = image::load_from_memory(&bytes).ok()?;
-        let (width, height) = (decoded.width().max(1), decoded.height().max(1));
+        let (pic, width, height) = if image.extension == "svg" {
+            // Word pictures need a raster image: render the SVG to PNG.
+            let svg = crate::svg::rasterize(&bytes, image.path.parent())?;
+            let pic = Pic::new_with_dimensions(svg.png, svg.pixel_width, svg.pixel_height);
+            (pic, svg.width, svg.height)
+        } else {
+            // `Pic::new` panics on undecodable data: validate first.
+            let decoded = image::load_from_memory(&bytes).ok()?;
+            let (width, height) = (decoded.width().max(1), decoded.height().max(1));
+            (Pic::new(&bytes), width, height)
+        };
         let width_emu = width * EMU_PER_PIXEL;
         let height_emu = height * EMU_PER_PIXEL;
-        let pic = Pic::new(&bytes);
         Some(if width_emu > MAX_PICTURE_WIDTH_EMU {
             let scaled_height = (u64::from(height_emu) * u64::from(MAX_PICTURE_WIDTH_EMU)
                 / u64::from(width_emu)) as u32;
@@ -592,6 +598,38 @@ mod tests {
         assert!(xml.contains("<w:i />") || xml.contains("<w:i/>"));
         assert!(xml.contains("<w:strike />") || xml.contains("<w:strike/>"));
         assert!(xml.contains(CODE_FONT));
+    }
+
+    #[test]
+    fn embeds_svg_images_as_bitmaps() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("diagram.svg"),
+            r##"<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><rect width="300" height="100" fill="#09d"/></svg>"##,
+        )
+        .unwrap();
+        let path = dir.path().join("doc.md");
+        let doc = Document::new("![diagram](diagram.svg)", Some(&path));
+        let bytes = export(&doc).unwrap();
+
+        let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+        let media: Vec<String> = zip
+            .file_names()
+            .filter(|name| name.starts_with("word/media/") && name.ends_with(".png"))
+            .map(str::to_owned)
+            .collect();
+        assert_eq!(media.len(), 1, "{media:?}");
+        let mut xml = String::new();
+        zip.by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut xml)
+            .unwrap();
+        assert!(xml.contains("<w:drawing>"), "{xml}");
+        // Displayed at the SVG's own size (300 px), not the 2x bitmap.
+        assert!(
+            xml.contains(&format!("cx=\"{}\"", 300 * EMU_PER_PIXEL)),
+            "{xml}"
+        );
     }
 
     #[test]

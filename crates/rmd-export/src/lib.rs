@@ -8,6 +8,7 @@ mod epub;
 mod html;
 mod pdf;
 mod resources;
+mod svg;
 mod typst_markup;
 
 use std::fmt;
