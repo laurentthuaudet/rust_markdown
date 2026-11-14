@@ -8,6 +8,7 @@ mod editor;
 mod export;
 mod find;
 mod find_bar;
+mod fonts;
 mod icons;
 mod library;
 mod library_panel;
@@ -19,9 +20,6 @@ mod watcher;
 use dioxus::desktop::{Config, LogicalSize, WindowBuilder, WindowCloseBehaviour};
 
 const APP_CSS: &str = include_str!("app.css");
-/// Caretta typefaces (Fraunces, Instrument Sans, JetBrains Mono), loaded the
-/// way the design system prescribes. Offline, the CSS falls back to system fonts.
-const CARETTA_FONTS: &str = r#"<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Instrument+Sans:wght@400..600&family=JetBrains+Mono:wght@400&display=swap">"#;
 /// Window icon, rendered from `assets/icon.svg` by build.rs.
 const WINDOW_ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon-256.png"));
 
@@ -35,7 +33,8 @@ fn main() {
         .with_window(window)
         .with_menu(None::<dioxus::desktop::muda::Menu>)
         .with_custom_head(format!(
-            "{CARETTA_FONTS}<style>{}</style><style>{APP_CSS}</style>",
+            "<style>{}</style><style>{}</style><style>{APP_CSS}</style>",
+            fonts::font_face_css(),
             rmd_core::STYLESHEET
         ))
         .with_custom_protocol(local_files::SCHEME, local_files::handle)
