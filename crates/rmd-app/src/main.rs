@@ -43,3 +43,16 @@ fn main() {
         .with_cfg(config)
         .launch(app::App);
 }
+
+#[cfg(test)]
+mod tests {
+    /// `assets/icon.ico` is committed for the installer (which needs a stable
+    /// path) but must stay identical to the one build.rs renders from the SVG.
+    /// If this fails, copy `$OUT_DIR/icon.ico` over `assets/icon.ico`.
+    #[test]
+    fn committed_installer_icon_matches_the_svg() {
+        let generated = include_bytes!(concat!(env!("OUT_DIR"), "/icon.ico"));
+        let committed = include_bytes!("../assets/icon.ico");
+        assert!(generated == committed, "assets/icon.ico is out of date");
+    }
+}
