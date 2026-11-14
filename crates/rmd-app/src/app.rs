@@ -144,6 +144,7 @@ pub fn App() -> Element {
             "data-theme": if dark { "dark" } else { "light" },
             onkeydown: on_keydown,
             header { class: "toolbar",
+                AppMark {}
                 button {
                     class: if show_library() { "active" },
                     title: "Afficher/masquer la bibliothèque",
@@ -337,4 +338,30 @@ async fn close_window(doc: Signal<Document>, status: Status) {
     }
     window.set_close_behavior(WindowCloseBehaviour::WindowCloses);
     window.close();
+}
+
+/// Caretta "Markdown editor" monogram (interface version, 24 px line icon).
+///
+/// Inlined rather than loaded as an image so the stroke can use
+/// `currentColor` and follow the light/dark theme.
+#[component]
+fn AppMark() -> Element {
+    rsx! {
+        svg {
+            class: "app-mark",
+            width: "22",
+            height: "22",
+            view_box: "0 0 24 24",
+            role: "img",
+            "aria-label": "Rust Markdown",
+            path {
+                d: "M2 16 V3 L7 10 L12 3 V21 H16 A6 6.5 0 0 0 16 8 H12",
+                fill: "none",
+                stroke: "currentColor",
+                stroke_width: "1.5",
+                stroke_linecap: "round",
+                stroke_linejoin: "round",
+            }
+        }
+    }
 }

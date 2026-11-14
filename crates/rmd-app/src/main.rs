@@ -18,11 +18,14 @@ mod watcher;
 use dioxus::desktop::{Config, LogicalSize, WindowBuilder, WindowCloseBehaviour};
 
 const APP_CSS: &str = include_str!("app.css");
+/// Window icon, rendered from `assets/icon.svg` by build.rs.
+const WINDOW_ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon-256.png"));
 
 fn main() {
     let window = WindowBuilder::new()
         .with_title("Rust Markdown")
-        .with_inner_size(LogicalSize::new(1280.0, 820.0));
+        .with_inner_size(LogicalSize::new(1280.0, 820.0))
+        .with_window_icon(dioxus::desktop::icon_from_memory(WINDOW_ICON).ok());
 
     let config = Config::new()
         .with_window(window)

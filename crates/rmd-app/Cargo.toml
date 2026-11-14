@@ -23,3 +23,8 @@ workspace = true
 
 [dev-dependencies]
 tempfile = "3.27.0"
+
+[build-dependencies]
+ico = "0.6.0"
+resvg = { version = "0.50", default-features = false }
+winresource = "0.1.34"
