@@ -9,7 +9,8 @@ A desktop Markdown reader/editor for Windows, written in Rust with [Dioxus](http
   and local images
 - **Edit** in a plain-text editor with a live side-by-side preview
   (editor only / side by side / preview only); both panes scroll together
-- Interface styled with the Caretta design system (icon, colours, typefaces);
+- Interface styled with the Caretta design system (icon, colours, embedded
+  typefaces — works fully offline);
   line numbers (toggle from the right-click menu), find & replace, light / dark /
   system theme; footnotes stay where they are written and in-document links
   (footnotes, anchors) scroll the preview
