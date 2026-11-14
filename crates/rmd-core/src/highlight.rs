@@ -1,6 +1,12 @@
 //! CSS for syntax-highlighted code blocks, in a light and a dark variant.
 
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::fmt;
 use std::sync::LazyLock;
+
+use comrak::adapters::SyntaxHighlighterAdapter;
+use comrak::plugins::syntect::SyntectAdapter;
 
 use syntect::highlighting::{Color, ThemeSet};
 use syntect::html::{ClassStyle, css_for_theme_with_class_style};
@@ -49,6 +55,46 @@ pub fn highlight_css(theme: CodeTheme) -> &'static str {
     match theme {
         CodeTheme::Light => &CSS[0],
         CodeTheme::Dark => &CSS[1],
+    }
+}
+
+/// Wraps comrak's syntect adapter, which in CSS-class mode writes a bare
+/// `<pre class="syntax-highlighting">` and drops the attributes comrak passes
+/// (`lang`, `data-sourcepos`). This keeps them and adds the class.
+pub(crate) struct ClassHighlighter(pub(crate) SyntectAdapter);
+
+impl SyntaxHighlighterAdapter for ClassHighlighter {
+    fn write_highlighted(
+        &self,
+        output: &mut dyn fmt::Write,
+        lang: Option<&str>,
+        code: &str,
+    ) -> fmt::Result {
+        self.0.write_highlighted(output, lang, code)
+    }
+
+    fn write_pre_tag(
+        &self,
+        output: &mut dyn fmt::Write,
+        mut attributes: HashMap<&'static str, Cow<'_, str>>,
+    ) -> fmt::Result {
+        let class = match attributes.get("class") {
+            Some(existing) => format!("syntax-highlighting {existing}"),
+            None => "syntax-highlighting".to_owned(),
+        };
+        attributes.insert("class", class.into());
+        // Stable attribute order (HashMap iteration order is random).
+        let mut attributes: Vec<_> = attributes.into_iter().collect();
+        attributes.sort_by_key(|(name, _)| *name);
+        comrak::html::write_opening_tag(output, "pre", attributes)
+    }
+
+    fn write_code_tag(
+        &self,
+        output: &mut dyn fmt::Write,
+        attributes: HashMap<&'static str, Cow<'_, str>>,
+    ) -> fmt::Result {
+        self.0.write_code_tag(output, attributes)
     }
 }
 

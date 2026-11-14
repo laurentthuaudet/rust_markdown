@@ -12,7 +12,7 @@ mod highlight;
 
 use comrak::nodes::{AstNode, NodeValue};
 use comrak::options::{Plugins, URLRewriter};
-use comrak::plugins::syntect::{SyntectAdapter, SyntectAdapterBuilder};
+use comrak::plugins::syntect::SyntectAdapterBuilder;
 use comrak::{Arena, Options};
 
 pub use comrak;
@@ -33,10 +33,12 @@ pub fn stylesheet() -> String {
 ///
 /// Code is highlighted with CSS classes (`hl-…`) rather than inline colours,
 /// so the colour theme can follow the application theme.
-static HIGHLIGHTER: LazyLock<SyntectAdapter> = LazyLock::new(|| {
-    SyntectAdapterBuilder::new()
-        .css_with_class_prefix(highlight::CLASS_PREFIX)
-        .build()
+static HIGHLIGHTER: LazyLock<highlight::ClassHighlighter> = LazyLock::new(|| {
+    highlight::ClassHighlighter(
+        SyntectAdapterBuilder::new()
+            .css_with_class_prefix(highlight::CLASS_PREFIX)
+            .build(),
+    )
 });
 
 /// Rewrites the URL of images (e.g. to resolve paths relative to the document).
@@ -205,7 +207,19 @@ mod tests {
     fn highlights_code_blocks() {
         let html = render_html("```rust\nfn main() {}\n```");
         assert!(
-            html.contains("<pre class=\"syntax-highlighting\">"),
+            html.contains("<pre class=\"syntax-highlighting\" lang=\"rust\">"),
+            "{html}"
+        );
+        // Source positions survive on highlighted blocks (scroll sync).
+        let config = RenderConfig {
+            source_positions: true,
+            ..Default::default()
+        };
+        let html = render_html_with("```rust\nfn main() {}\n```", &config);
+        assert!(
+            html.contains(
+                "<pre class=\"syntax-highlighting\" data-sourcepos=\"1:1-3:3\" lang=\"rust\">"
+            ),
             "{html}"
         );
         assert!(
