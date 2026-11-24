@@ -7,6 +7,8 @@ A desktop Markdown reader/editor for Windows, written in Rust with [Dioxus](http
 - **View** Markdown: CommonMark + GitHub Flavored Markdown (tables, task lists,
   strikethrough, autolinks, footnotes, alerts) with syntax-highlighted code blocks
   and local images
+- **Tabs**: several documents in one window; opening a file from Explorer adds a
+  tab to the running application instead of starting a new one
 - **Edit** in a plain-text editor with a live side-by-side preview
   (editor only / side by side / preview only); both panes scroll together
 - Interface styled with the Caretta design system (icon, colours, embedded
@@ -27,8 +29,9 @@ A desktop Markdown reader/editor for Windows, written in Rust with [Dioxus](http
 
 | Action | How |
 |--------|-----|
-| New / open / save / save as | Toolbar or `Ctrl+N`, `Ctrl+O`, `Ctrl+S`, `Ctrl+Shift+S` |
-| Open a file at startup | `rust-markdown path\to\file.md` (works with "Open with…") |
+| New tab / open / save / save as | Toolbar or `Ctrl+N` (or `Ctrl+T`), `Ctrl+O` (several files at once), `Ctrl+S`, `Ctrl+Shift+S` |
+| Switch / close tabs | Click a tab, `Ctrl+Tab` / `Ctrl+Shift+Tab` (or `Ctrl+PgDn` / `Ctrl+PgUp`); `Ctrl+W`, the tab’s ×, or a middle click to close |
+| Open files from the command line or Explorer | `rust-markdown a.md b.md`, double-click or "Open with…": if the application is already running, the files open as tabs of its window |
 | Export | Toolbar → **Exporter** → format |
 | Create an environment | Library sidebar → **+** |
 | Add files to an environment | Select it → **Ajouter des fichiers** / **Ajouter un dossier**, or use **Ajouter à…** in the document bar |

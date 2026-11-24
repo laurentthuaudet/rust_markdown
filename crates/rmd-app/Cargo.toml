@@ -9,6 +9,7 @@ publish.workspace = true
 base64 = "0.23.1"
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 dioxus = { version = "0.7.10", features = ["desktop"] }
+interprocess = "2.4.9"
 notify-debouncer-mini = "0.7.0"
 percent-encoding = "2.3.2"
 rfd = "0.18.0"
