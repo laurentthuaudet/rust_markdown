@@ -19,6 +19,7 @@ use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 use crate::document::{DiskState, Document};
 use crate::library::Library;
 use crate::notice::{Notice, Status};
+use crate::tabs::same_path;
 
 /// Editors often write a file in several steps: wait for things to settle.
 const DEBOUNCE: Duration = Duration::from_millis(300);
@@ -60,17 +61,6 @@ impl FolderWatcher {
     }
 }
 
-/// Windows paths are case-insensitive.
-fn same_path(a: &Path, b: &Path) -> bool {
-    let normalize = |path: &Path| {
-        std::path::absolute(path)
-            .unwrap_or_else(|_| path.to_path_buf())
-            .to_string_lossy()
-            .to_lowercase()
-    };
-    normalize(a) == normalize(b)
-}
-
 /// Watches files on disk for the lifetime of the calling component.
 pub fn use_file_watcher(doc: Signal<Document>, status: Status) {
     let library = use_context::<Library>();
@@ -85,6 +75,14 @@ pub fn use_file_watcher(doc: Signal<Document>, status: Status) {
     let open_path = use_memo(move || doc.read().path().map(Path::to_path_buf));
     // Set while the "reload?" question is on screen, to ask only once.
     let asking = use_signal(|| false);
+
+    // Only the active tab's folder is watched: a tab brought back to the
+    // front may have changed on disk in the meantime.
+    use_effect(move || {
+        if open_path().is_some() {
+            spawn(on_open_file_changed(doc, status, asking));
+        }
+    });
 
     let lib = library.clone();
     let folders_watcher = watcher.clone();

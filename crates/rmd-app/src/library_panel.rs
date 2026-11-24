@@ -279,7 +279,7 @@ fn ResultItem(
             title: "{document.path.display()}",
             onclick: move |_| {
                 if !document.missing {
-                    spawn(open_path(doc, status, path.clone()));
+                    spawn(open_path(status, path.clone()));
                 }
             },
             div { class: "result-title",

@@ -1,11 +1,11 @@
 //! Root component: toolbar, side-by-side editor and live preview.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use dioxus::desktop::tao::event::{Event, WindowEvent};
 use dioxus::desktop::{WindowCloseBehaviour, use_wry_event_handler};
 use dioxus::prelude::*;
-use rfd::{AsyncFileDialog, AsyncMessageDialog, MessageButtons, MessageDialogResult, MessageLevel};
+use rfd::AsyncFileDialog;
 use rmd_core::RenderConfig;
 
 use crate::document::Document;
@@ -14,11 +14,13 @@ use crate::editor::Editor;
 use crate::export::ExportMenu;
 use crate::find_bar::FindState;
 use crate::icons::{Glyph, Icon};
+use crate::instance::Requests;
 use crate::library::Library;
 use crate::library_panel::LibraryPanel;
 use crate::local_files;
 use crate::notice::{Notice, Status, StatusBar};
 use crate::settings::{Settings, Theme, use_system_dark};
+use crate::tabs::{TabBar, TabSet, Tabs};
 use crate::watcher::use_file_watcher;
 
 const PREVIEW_SCRIPT: &str = include_str!("preview.js");
@@ -44,28 +46,36 @@ impl ViewMode {
     }
 }
 
-/// Document passed on the command line (e.g. "Open with…" from Explorer).
-fn initial_document() -> (Document, Option<Notice>) {
-    match std::env::args_os().nth(1).map(PathBuf::from) {
-        None => (Document::new(), None),
-        Some(path) => match Document::open(&path) {
-            Ok(doc) => (doc, None),
-            Err(err) => (
-                Document::new(),
-                Some(Notice::error(format!(
+/// Files passed on the command line (e.g. "Open with…" from Explorer), opened
+/// as tabs. Returns the live document, the tabs and any error to show.
+fn initial_tabs() -> (Document, TabSet, Option<Notice>) {
+    let mut live = Document::new();
+    let mut set = TabSet::new();
+    let mut notice = None;
+    for path in std::env::args_os().skip(1).map(PathBuf::from) {
+        match Document::open(&path) {
+            Ok(doc) if set.find(&live, &path).is_none() => {
+                set.open(&mut live, doc, (0.0, 0.0));
+            }
+            Ok(_) => {}
+            Err(err) => {
+                notice = Some(Notice::error(format!(
                     "Impossible d'ouvrir {} : {err}",
                     path.display()
-                ))),
-            ),
-        },
+                )));
+            }
+        }
     }
+    (live, set, notice)
 }
 
 #[component]
 pub fn App() -> Element {
-    let initial = use_hook(initial_document);
+    let initial = use_hook(initial_tabs);
     let doc = use_signal(|| initial.0.clone());
-    let status = use_signal(|| initial.1.clone());
+    let set = use_signal(|| initial.1.clone());
+    let status = use_signal(|| initial.2.clone());
+    let tabs = use_context_provider(|| Tabs::new(doc, set));
     let mut mode = use_signal(|| ViewMode::Split);
     let mut show_library = use_signal(|| true);
     use_context_provider(Library::open);
@@ -76,13 +86,30 @@ pub fn App() -> Element {
 
     use_file_watcher(doc, status);
 
+    // Files opened while the application is running ("Open with…", double
+    // click in Explorer) arrive from the new process through the pipe.
+    use_future(move || async move {
+        let Some(mut requests) = try_consume_context::<Requests>().and_then(|r| r.take()) else {
+            return;
+        };
+        while let Some(files) = requests.recv().await {
+            let window = dioxus::desktop::window();
+            window.set_minimized(false);
+            window.set_visible(true);
+            window.set_focus();
+            for path in files {
+                tabs.open_path(status, path).await;
+            }
+        }
+    });
+
     use_wry_event_handler(move |event, _| {
         if let Event::WindowEvent {
             event: WindowEvent::CloseRequested,
             ..
         } = event
         {
-            spawn(close_window(doc, status));
+            spawn(close_window(tabs, status));
         }
     });
 
@@ -114,20 +141,35 @@ pub fn App() -> Element {
         if !event.modifiers().ctrl() {
             return;
         }
-        let Key::Character(key) = event.key() else {
-            return;
-        };
         let shift = event.modifiers().shift();
-        match key.to_lowercase().as_str() {
+        let key = match event.key() {
+            Key::Character(key) => key.to_lowercase(),
+            Key::Tab => {
+                fire(tabs.cycle(if shift { -1 } else { 1 }));
+                event.prevent_default();
+                return;
+            }
+            Key::PageDown | Key::PageUp => {
+                fire(tabs.cycle(if event.key() == Key::PageUp { -1 } else { 1 }));
+                event.prevent_default();
+                return;
+            }
+            _ => return,
+        };
+        match key.as_str() {
             "s" if shift => fire(save_as(doc, status)),
             "s" => fire(save(doc, status)),
-            "o" => fire(open(doc, status)),
-            "n" => fire(new_document(doc, status)),
+            "o" => fire(open(tabs, status)),
+            "n" | "t" => fire(tabs.new_tab()),
+            "w" => {
+                let id = tabs.set.read().infos(&doc.read())[tabs.set.read().active_index()].id;
+                fire(tabs.close(status, id));
+            }
             "f" | "h" => {
                 if mode() == ViewMode::Preview {
                     mode.set(ViewMode::Split);
                 }
-                find.show(key.eq_ignore_ascii_case("h"));
+                find.show(key == "h");
             }
             _ => return,
         };
@@ -153,8 +195,8 @@ pub fn App() -> Element {
                     Glyph { icon: Icon::Sidebar }
                     "Bibliothèque"
                 }
-                button { title: "Nouveau (Ctrl+N)", onclick: move |_| { fire(new_document(doc, status)); }, "Nouveau" }
-                button { title: "Ouvrir (Ctrl+O)", onclick: move |_| { fire(open(doc, status)); }, "Ouvrir" }
+                button { title: "Nouvel onglet (Ctrl+N)", onclick: move |_| { fire(tabs.new_tab()); }, "Nouveau" }
+                button { title: "Ouvrir dans un onglet (Ctrl+O)", onclick: move |_| { fire(open(tabs, status)); }, "Ouvrir" }
                 button { title: "Enregistrer (Ctrl+S)", onclick: move |_| { fire(save(doc, status)); }, "Enregistrer" }
                 button { title: "Enregistrer sous (Ctrl+Maj+S)", onclick: move |_| { fire(save_as(doc, status)); }, "Enregistrer sous" }
                 ExportMenu { doc, status }
@@ -189,6 +231,7 @@ pub fn App() -> Element {
                     LibraryPanel { doc, status }
                 }
                 div { class: "workspace",
+                    TabBar { tabs, status }
                     DocumentBar { doc, status }
                     main { class: "panes",
                         if current_mode != ViewMode::Preview {
@@ -207,26 +250,6 @@ pub fn App() -> Element {
     }
 }
 
-/// Asks what to do with unsaved changes. Returns `true` if the caller may proceed.
-async fn confirm_discard(doc: Signal<Document>, status: Status) -> bool {
-    if !doc.read().is_dirty() {
-        return true;
-    }
-    let name = doc.read().display_name();
-    let answer = AsyncMessageDialog::new()
-        .set_level(MessageLevel::Warning)
-        .set_title("Modifications non enregistrées")
-        .set_description(format!("Enregistrer les modifications de « {name} » ?"))
-        .set_buttons(MessageButtons::YesNoCancel)
-        .show()
-        .await;
-    match answer {
-        MessageDialogResult::Yes => save(doc, status).await,
-        MessageDialogResult::No => true,
-        _ => false,
-    }
-}
-
 fn markdown_dialog(doc: &Document) -> AsyncFileDialog {
     let dialog = AsyncFileDialog::new()
         .add_filter("Markdown", &["md", "markdown", "mdown", "mkd", "txt"])
@@ -237,47 +260,27 @@ fn markdown_dialog(doc: &Document) -> AsyncFileDialog {
     }
 }
 
-async fn new_document(mut doc: Signal<Document>, status: Status) {
-    if confirm_discard(doc, status).await {
-        doc.set(Document::new());
-    }
-}
-
-async fn open(doc: Signal<Document>, status: Status) {
-    if !confirm_discard(doc, status).await {
-        return;
-    }
-    let dialog = markdown_dialog(&doc.read());
-    let Some(file) = dialog.pick_file().await else {
+/// Lets the user pick one or more files, each opened in its own tab.
+async fn open(tabs: Tabs, status: Status) {
+    let dialog = markdown_dialog(&tabs.doc.read());
+    let Some(files) = dialog.pick_files().await else {
         return;
     };
-    load(doc, status, file.path());
-}
-
-/// Opens `path` (e.g. from the library), asking first about unsaved changes.
-pub async fn open_path(doc: Signal<Document>, status: Status, path: PathBuf) {
-    if doc.read().path() == Some(path.as_path()) {
-        return;
-    }
-    if confirm_discard(doc, status).await {
-        load(doc, status, &path);
+    for file in files {
+        tabs.open_path(status, file.path().to_path_buf()).await;
     }
 }
 
-fn load(mut doc: Signal<Document>, mut status: Status, path: &Path) {
-    match Document::open(path) {
-        Ok(opened) => {
-            doc.set(opened);
-            status.set(None);
-        }
-        Err(err) => status.set(Some(Notice::error(format!(
-            "Impossible d'ouvrir le fichier : {err}"
-        )))),
+/// Opens `path` (e.g. from the library) in a tab, or shows its tab if it is
+/// already open.
+pub async fn open_path(status: Status, path: PathBuf) {
+    if let Some(tabs) = try_consume_context::<Tabs>() {
+        tabs.open_path(status, path).await;
     }
 }
 
 /// Saves to the current path, or asks for one. Returns `true` on success.
-async fn save(mut doc: Signal<Document>, mut status: Status) -> bool {
+pub async fn save(mut doc: Signal<Document>, mut status: Status) -> bool {
     if doc.read().path().is_none() {
         return save_as(doc, status).await;
     }
@@ -332,16 +335,16 @@ fn fire<T: 'static>(action: impl Future<Output = T> + 'static) {
     });
 }
 
-/// Handles the window close button: asks about unsaved changes first.
+/// Handles the window close button: asks about unsaved changes in every tab first.
 ///
 /// The window is configured to hide on close, so it is shown again while the
 /// question is asked; it only really closes once the user agreed.
-async fn close_window(doc: Signal<Document>, status: Status) {
+async fn close_window(tabs: Tabs, status: Status) {
     let window = dioxus::desktop::window();
-    if doc.read().is_dirty() {
+    if !tabs.set.read().dirty(&tabs.doc.read()).is_empty() {
         window.set_visible(true);
         window.set_focus();
-        if !confirm_discard(doc, status).await {
+        if !tabs.confirm_close_all(status).await {
             return;
         }
     }

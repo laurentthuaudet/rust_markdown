@@ -10,11 +10,13 @@ mod find;
 mod find_bar;
 mod fonts;
 mod icons;
+mod instance;
 mod library;
 mod library_panel;
 mod local_files;
 mod notice;
 mod settings;
+mod tabs;
 mod watcher;
 
 use dioxus::desktop::{Config, LogicalSize, WindowBuilder, WindowCloseBehaviour};
@@ -24,6 +26,13 @@ const APP_CSS: &str = include_str!("app.css");
 const WINDOW_ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon-256.png"));
 
 fn main() {
+    // A second launch hands its files to the running window and stops here.
+    let files: Vec<std::path::PathBuf> = std::env::args_os().skip(1).map(Into::into).collect();
+    let requests = match instance::claim("rust_markdown", &files) {
+        instance::Instance::Primary(requests) => requests,
+        instance::Instance::Forwarded => return,
+    };
+
     let window = WindowBuilder::new()
         .with_title("Rust Markdown")
         .with_inner_size(LogicalSize::new(1280.0, 820.0))
@@ -44,6 +53,7 @@ fn main() {
 
     dioxus::LaunchBuilder::desktop()
         .with_cfg(config)
+        .with_context(requests)
         .launch(app::App);
 }
 
