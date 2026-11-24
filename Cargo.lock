@@ -5511,7 +5511,7 @@ dependencies = [
 
 [[package]]
 name = "rmd-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "comrak",
  "syntect",
@@ -5519,7 +5519,7 @@ dependencies = [
 
 [[package]]
 name = "rmd-export"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "docx-rs",
@@ -5538,7 +5538,7 @@ dependencies = [
 
 [[package]]
 name = "rmd-store"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rmd-core",
  "rusqlite",
@@ -5593,7 +5593,7 @@ dependencies = [
 
 [[package]]
 name = "rust-markdown"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.23.1",
  "chrono",

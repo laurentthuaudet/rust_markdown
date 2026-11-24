@@ -11,7 +11,7 @@ docx-rs = "0.4.22"
 epub-builder = { version = "0.8.3", default-features = false, features = ["zip-library"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 resvg = "0.50.0"
-rmd-core = { version = "0.1.0", path = "../rmd-core" }
+rmd-core = { version = "0.2.0", path = "../rmd-core" }
 thiserror = "2.0.21"
 typst = "0.15.1"
 typst-assets = { version = "0.15.1", features = ["fonts"] }
